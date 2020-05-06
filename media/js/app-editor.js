@@ -1,5 +1,11 @@
-var song = 'http://ia902606.us.archive.org/35/items/shortpoetry_047_librivox/song_cjrg_teasdale_64kb.mp3'
-var wavesurfer = createWavesurfer(song)
+//var song = 'http://ia902606.us.archive.org/35/items/shortpoetry_047_librivox/song_cjrg_teasdale_64kb.mp3'
+var sound = "https://freesound.org" + document.getElementById("waveform").getAttribute("sound_url");
+var wavesurfer = createWavesurfer(sound)
+
+var sound_name = document.getElementById("waveform").getAttribute("sound_name");
+var sound_id = document.getElementById("waveform").getAttribute("sound_id");
+var username = document.getElementById("waveform").getAttribute("username");
+
 
 var AudioContext = window.AudioContext || window.webkitAudioContext;  // Safari and old versions of Chrome
 
@@ -185,7 +191,8 @@ function exportBufferToFile() {
     document.body.appendChild(a);
     a.style = "display: none";
     a.href = url;
-    a.download = "sample.wav";
+    var sound = sound_id + '__' + username + '__' + sound_name + '__EDIT.wav';
+    a.download = sound;
     a.click();
     window.URL.revokeObjectURL(url);
 }

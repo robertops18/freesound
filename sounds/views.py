@@ -295,7 +295,15 @@ def sound(request, username, sound_id):
 
 
 def sound_edit_download(request, username, sound_id):
-    return render(request, 'sounds/editor.html');
+    sound = Sound.objects.prefetch_related("tags__tag") \
+        .select_related("license", "user", "user__profile", "pack") \
+        .get(id=sound_id, user__username=username);
+    tvars = {
+        'sound': sound,
+        'username': username,
+        'sound_id': sound_id
+    }
+    return render(request, 'sounds/editor.html', tvars);
 
 
 @login_required
