@@ -985,6 +985,8 @@ def upload(request, no_flash=False):
         'successes': successes,
         'errors': errors,
         'no_flash': no_flash,
+        'max_file_size': settings.UPLOAD_MAX_FILE_SIZE_COMBINED,
+        'max_file_size_in_MB': int(round(settings.UPLOAD_MAX_FILE_SIZE_COMBINED * 1.0 / (1024 * 1024)))
     }
     return render(request, 'accounts/upload.html', tvars)
 
@@ -1150,8 +1152,8 @@ def email_reset_complete(request, uidb36=None, token=None):
     # Remove temporal mail change information from the DB
     ResetEmailRequest.objects.get(user=user).delete()
 
-    # Clear saved email bounces for old email
-    EmailBounce.objects.filter(user=user).delete()
+    # NOTE: no need to clear existing EmailBounce objects associated to this user here because it is done in
+    # a User deletion pre_save hook if we detect that email has changed
 
     # Send email to the old address notifying about the change
     tvars = {'old_email': old_email, 'user': user}
