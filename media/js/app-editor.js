@@ -39,7 +39,7 @@ function initQuerySelectors() {
       getSelectedRegion();
     }
     document.querySelector('#undo_get_selection_btn').onclick = function () {
-      undoGetSelectedRegion(song);
+      undoGetSelectedRegion(sound);
     }
     document.querySelector('#reset_filters').onclick = function () {
       resetFilters();
@@ -119,9 +119,10 @@ function initWavesurferEvents() {
 function createWavesurfer(song) {
     var wavesurfer = WaveSurfer.create({
       container: '#waveform',
-      waveColor: '#D9DCFF',
-      progressColor: '#4353FF',
-      cursorColor: '#4353FF',
+      waveColor: '#f5a52c',
+      progressColor: '#b36d04',
+      cursorColor: '#FFFFFF',
+      backgroundColor: '#111212',
       barWidth: 3,
       barRadius: 3,
       cursorWidth: 1,
@@ -137,10 +138,10 @@ function createWavesurfer(song) {
             'font-size': '10px'
           }
         }),
-        WaveSurfer.regions.create({drag:false})
+        WaveSurfer.regions.create({drag:false, color: 'rgba(256, 256, 256, 1)'})
         ]
     });
-    wavesurfer.enableDragSelection({});
+    wavesurfer.enableDragSelection({drag:false, color: 'rgba(256, 256, 256, 0.3)'});
     wavesurfer.load(song);
 	
     return wavesurfer;
