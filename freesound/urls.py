@@ -53,6 +53,7 @@ urlpatterns = [
     url(r'^people/(?P<username>[^//]+)/geotags/$', geotags.views.for_user, name="geotags-for-user"),
     url(r'^people/(?P<username>[^//]+)/sounds/(?P<sound_id>\d+)/$', sounds.views.sound, name="sound"),
     url(r'^people/(?P<username>[^//]+)/sounds/(?P<sound_id>\d+)/download/.*$', sounds.views.sound_download, name="sound-download"),
+url(r'^people/(?P<username>[^//]+)/sounds/(?P<sound_id>\d+)/edit-download/$', sounds.views.sound_edit_download, name="sound-edit-download"),
     url(r'^people/(?P<username>[^//]+)/sounds/(?P<sound_id>\d+)/flag/$', sounds.views.flag, name="sound-flag"),
     url(r'^people/(?P<username>[^//]+)/sounds/(?P<sound_id>\d+)/edit/sources/$', sounds.views.sound_edit_sources, name="sound-edit-sources"),
     url(r'^people/(?P<username>[^//]+)/sounds/(?P<sound_id>\d+)/edit/$', sounds.views.sound_edit, name="sound-edit"),

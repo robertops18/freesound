@@ -294,6 +294,10 @@ def sound(request, username, sound_id):
     return render(request, 'sounds/sound.html', tvars)
 
 
+def sound_edit_download(request, username, sound_id):
+    return render(request, 'sounds/editor.html');
+
+
 @login_required
 def after_download_modal(request):
     """
