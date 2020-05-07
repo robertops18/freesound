@@ -2,6 +2,10 @@
 var sound = "https://freesound.org" + document.getElementById("waveform").getAttribute("sound_url");
 var wavesurfer = createWavesurfer(sound)
 
+document.body.onkeyup = function(event) {
+    keyPressed(event);
+}
+
 var sound_name = document.getElementById("waveform").getAttribute("sound_name");
 var sound_id = document.getElementById("waveform").getAttribute("sound_id");
 var username = document.getElementById("waveform").getAttribute("username");
@@ -311,7 +315,7 @@ function deleteRegion() {
     setDisabled(true);
 	var regionList = wavesurfer.regions.list;
 	var region = regionList[Object.keys(regionList)[0]]
-	
+
 	var startTime = region.start;
     var endTime = region.end;
 
@@ -331,21 +335,21 @@ function deleteRegion() {
 
         resetAndLoadNewBuffer(finalBuffer);
     }
-    // Case 3: Region is at the end of the sample 
+    // Case 3: Region is at the end of the sample
     else if (endTime == totalDuration) {
         finalBuffer = createBuffer(wavesurfer.backend.buffer, startTime);
         copyBuffer(wavesurfer.backend.buffer, 0, startTime, finalBuffer, 0);
 
         resetAndLoadNewBuffer(finalBuffer);
-    }     
+    }
     // Case 4: Region is in the middle
     else {
         firstBuffer = createBuffer(wavesurfer.backend.buffer, startTime);
         copyBuffer(wavesurfer.backend.buffer, 0, startTime, firstBuffer, 0);
-    
+
         secondBuffer = createBuffer(wavesurfer.backend.buffer, totalDuration - endTime);
         copyBuffer(wavesurfer.backend.buffer, endTime, totalDuration, secondBuffer, 0);
-    
+
         finalBuffer = concatBuffer(firstBuffer, secondBuffer);
 
         resetAndLoadNewBuffer(finalBuffer);
@@ -561,4 +565,20 @@ function getIntervals(peaks) {
       }
     });
     return groups;
+}
+
+// Key events
+
+function keyPressed(event) {
+    print(event);
+    switch (event.keyCode) {
+        case 32: // space bar
+            wavesurfer.playPause();
+            break;
+        case 8: // delete
+            if (Object.keys(wavesurfer.regions.list).length > 0) {
+                deleteRegion();
+            }
+            break;
+    }
 }
