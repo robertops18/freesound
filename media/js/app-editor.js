@@ -50,9 +50,6 @@ function initQuerySelectors() {
     document.querySelector('#empty_region').onclick = function () {
       emptyRegion();
     }
-    document.querySelector('#select_all_btn').onclick = function () {
-      selectAllSample();
-    }
     document.querySelector('#reverse').onclick = function () {
       reverse();
     }
@@ -299,14 +296,6 @@ function undoGetSelectedRegion(song) {
     wavesurfer.empty()
     wavesurfer.load(song);
     setDisabled(true);
-}
-
-function selectAllSample() {
-    wavesurfer.addRegion({
-        start: 0,
-        end: wavesurfer.getDuration()
-    });
-    setDisabled(false);
 }
 
 function deletePreviousRegion() {
