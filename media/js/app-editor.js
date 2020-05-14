@@ -5,6 +5,9 @@ var wavesurfer = createWavesurfer(sound)
 document.body.onkeyup = function(event) {
     keyPressed(event);
 }
+document.body.onkeydown = function(e) {
+    return !(e.keyCode == 32);
+};
 
 var sound_name = document.getElementById("waveform").getAttribute("sound_name");
 var sound_id = document.getElementById("waveform").getAttribute("sound_id");
@@ -438,6 +441,10 @@ function getRegion() {
     return region;
 }
 
+function numOfRegions() {
+    return Object.keys(wavesurfer.regions.list).length;
+}
+
 // Filter related functions
 function applyFilter(filterType, frequency) {
 	var filter = wavesurfer.backend.ac.createBiquadFilter();
@@ -576,7 +583,7 @@ function keyPressed(event) {
             wavesurfer.playPause();
             break;
         case 8: // delete
-            if (Object.keys(wavesurfer.regions.list).length > 0) {
+            if (numOfRegions() > 0) {
                 deleteRegion();
             }
             break;
