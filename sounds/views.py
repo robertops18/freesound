@@ -64,8 +64,7 @@ from utils.similarity_utilities import get_similar_sounds
 from utils.text import remove_control_chars
 from utils.username import redirect_if_old_username_or_404
 
-logger = logging.getLogger('web')
-downloads_logger = logging.getLogger('downloads')
+web_logger = logging.getLogger('web')
 
 
 def get_n_weeks_back_datetime(n_weeks):
@@ -326,7 +325,7 @@ def after_download_modal(request):
         modal_shown_timestamps = [item for item in modal_shown_timestamps if item > (time.time() - 24 * 3600)]
 
         if should_suggest_donation(request.user, len(modal_shown_timestamps)):
-            logger.info('Showing after download donate modal (%s)' % json.dumps({'user_id': request.user.id}))
+            web_logger.info('Showing after download donate modal (%s)' % json.dumps({'user_id': request.user.id}))
             modal_shown_timestamps.append(time.time())
             cache.set(modal_shown_timestamps_cache_key(request.user), modal_shown_timestamps,
                       60 * 60 * 24)  # 24 lifetime cache
@@ -587,7 +586,7 @@ def pack_delete(request, username, pack_id):
         if pack_id != pack.id:
             raise PermissionDenied
         if abs(time.time() - link_generated_time) < 10:
-            logger.info("User %s requested to delete pack %s" % (request.user.username, pack_id))
+            web_logger.info("User %s requested to delete pack %s" % (request.user.username, pack_id))
             pack.delete_pack(remove_sounds=False)
             return HttpResponseRedirect(reverse("accounts-home"))
         else:
@@ -762,7 +761,7 @@ def delete(request, username, sound_id):
             form = DeleteSoundForm(sound_id=sound_id)
         else:
 
-            logger.info("User %s requested to delete sound %s" % (request.user.username,sound_id))
+            web_logger.info("User %s requested to delete sound %s" % (request.user.username,sound_id))
             try:
                 ticket = sound.ticket
                 tc = TicketComment(sender=request.user,
