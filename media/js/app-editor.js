@@ -40,6 +40,7 @@ var allpass_knob = createKnob("allpass_knob", 0, 500);
 var amplify_knob = createKnob("amplify_knob", 1, 5, 1);
 var fade_in_knob = createKnob("fade_in_knob", 1, 10, 1);
 var fade_out_knob = createKnob("fade_out_knob", 1, 10, 1);
+var bitcrush_knob = createKnob("bitcrush_knob", 4, 16, 4);
 
 // Undo and redo data structures
 
@@ -96,12 +97,16 @@ function initQuerySelectors() {
     document.querySelector('#redo').onclick = function () {
         redo();
     }
+    document.querySelector('#bitcrush').onclick = function () {
+        applyBitcrushEffect(bitcrush_knob.getValue());
+    }
     
     querySelectorFilters();
 }
 
 function querySelectorFilters() {
     document.querySelector('#lowpass_filter_btn').onclick = function () {
+        toUndo('filter', null);
 		applyFilter('lowpass', lowpass_knob.getValue());
 	}
 	document.querySelector('#highpass_filter_btn').onclick = function () {
@@ -189,6 +194,7 @@ function undo() {
                 wavesurfer.loadDecodedBuffer(previousBuffer);
                 break;
             case 'filter': // TODO: Undo functions with filters
+                print(wavesurfer.getFilters());
                 break;
         }
     } else {
@@ -321,10 +327,14 @@ function encodeWAV(originalBuffer){
     return blob;
   }
 
-function fadeIn(duration) {
+function fadeIn(duration) { //TODO
     var gainNode = wavesurfer.backend.gainNode;
-    gainNode.gain.setValueAtTime(0, wavesurfer.getCurrentTime());
-    gainNode.gain.linearRampToValueAtTime(3.0, wavesurfer.getCurrentTime() + duration);
+    var sm = getSmoothFade(wavesurfer.backend.ac, gainNode, {type: 'linear', fadeLength: duration});
+    print(sm);
+    print(wavesurfer.backend);
+    sm.fadeIn();
+    //gainNode.gain.setValueAtTime(0, wavesurfer.getCurrentTime());
+    //gainNode.gain.linearRampToValueAtTime(3.0, wavesurfer.getCurrentTime() + duration);
 }
 
 function fadeOut(duration) {
@@ -643,6 +653,14 @@ function getIntervals(peaks) {
       }
     });
     return groups;
+}
+
+// Bitcrush effect
+
+function applyBitcrushEffect(bits) {
+    var bitcrushNode = getBitCrushNode(wavesurfer.backend.ac, bits);
+    wavesurfer.backend.source.connect(bitcrushNode);
+    bitcrushNode.connect(wavesurfer.backend.ac.destination);
 }
 
 // Key events
