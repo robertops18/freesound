@@ -37,44 +37,60 @@ var amplify_knob = createKnob("amplify_knob", 1, 5, 1);
 var fade_in_knob = createKnob("fade_in_knob", 1, 10, 1);
 var fade_out_knob = createKnob("fade_out_knob", 1, 10, 1);
 
+// Undo and redo data structures
+
+var undoArray = []
+var redoArray = []
+
 // Initialization functions 
 function initQuerySelectors() {
     document.querySelector('#slider').oninput = function () {
-		  wavesurfer.zoom(Number(this.value));
+        wavesurfer.zoom(Number(this.value));
     }
     document.querySelector('#get_selection_btn').onclick = function () {
-      getSelectedRegion();
+        toUndo('buffer', wavesurfer.backend.buffer);
+        getSelectedRegion();
     }
     document.querySelector('#undo_get_selection_btn').onclick = function () {
-      undoGetSelectedRegion(sound);
+        toUndo('buffer', wavesurfer.backend.buffer);
+        getOriginalSample(sound);
     }
     document.querySelector('#reset_filters').onclick = function () {
-      resetFilters();
+        resetFilters();
     }
     document.querySelector('#delete_region').onclick = function () {
-      deleteRegion();
+        toUndo('buffer', wavesurfer.backend.buffer);
+        deleteRegion();
     }
     document.querySelector('#empty_region').onclick = function () {
-      emptyRegion();
+        toUndo('buffer', wavesurfer.backend.buffer);
+        emptyRegion();
     }
     document.querySelector('#reverse').onclick = function () {
-      reverse();
+        toUndo('buffer', wavesurfer.backend.buffer);
+        reverse();
     }
     document.querySelector('#fade_in').onclick = function () {
-      fadeIn(fade_in_knob.getValue());
+        fadeIn(fade_in_knob.getValue());
     }
     document.querySelector('#fade_out').onclick = function () {
-      fadeOut(fade_out_knob.getValue());
+        fadeOut(fade_out_knob.getValue());
     }
     document.querySelector('#amplify_btn').onclick = function () {
-      amplify(amplify_knob.getValue());
+        amplify(amplify_knob.getValue());
     }
     document.querySelector('#export').onclick = function () {
-      exportBufferToFile();
+        exportBufferToFile();
     }
     document.querySelector('#play_btn').onclick = function () {
-      wavesurfer.playPause();
-      //playBeats();
+        wavesurfer.playPause();
+        //playBeats();
+    }
+    document.querySelector('#undo').onclick = function () {
+        undo();
+    }
+    document.querySelector('#redo').onclick = function () {
+        redo();
     }
     
     querySelectorFilters();
@@ -111,7 +127,7 @@ function initWavesurferEvents() {
     // Reset region when clicking the waveform
 	wavesurfer.on('seek', function(region) {
         wavesurfer.clearRegions();
-        setDisabled(true);
+        setDisabledWhenNoRegion(true);
 	});
 
 	// Delete previous region when creating a new one
@@ -154,6 +170,64 @@ function createWavesurfer(song) {
 // Print aux function
 function print(s) {
     console.log(s);
+}
+
+// Undo and redo actions
+
+function undo() {
+    if (undoArray.length > 0) {
+        toRedo('buffer', wavesurfer.backend.buffer);
+        var undoAction = undoArray.pop();
+        switch (undoAction.type) {
+            case 'buffer':
+                var previousBuffer = undoAction.action;
+                wavesurfer.empty()
+                wavesurfer.loadDecodedBuffer(previousBuffer);
+                break;
+            case 'filter': // TODO: Undo functions with filters
+                break;
+        }
+    } else {
+        print('Nothing to undo')
+    }
+}
+
+function redo() {
+    if (redoArray.length > 0) {
+        toUndo('buffer', wavesurfer.backend.buffer);
+        var redoAction = redoArray.pop();
+        switch (redoAction.type) {
+            case 'buffer':
+                var previousBuffer = redoAction.action;
+                wavesurfer.empty()
+                wavesurfer.loadDecodedBuffer(previousBuffer);
+                break;
+            case 'filter': // TODO: Redo functions with filters
+                break;
+        }
+    } else {
+        print('Nothing to redo')
+    }
+}
+
+function toUndo(type, action) {
+    var undoAction = {
+        type: type,
+        action: action
+    }
+    undoArray.push(undoAction);
+    print('Storing in undo')
+    print(undoArray)
+}
+
+function toRedo(type, action) {
+    var redoAction = {
+        type: type,
+        action: action
+    }
+    redoArray.push(redoAction);
+    print('Storing in redo')
+    print(redoArray)
 }
 
 // Buffer related functions
@@ -201,7 +275,6 @@ function exportBufferToFile() {
     a.click();
     window.URL.revokeObjectURL(url);
 }
-
 
 function writeUTFBytes(view, offset, string) {
     for (var i = 0; i < string.length; i++) {
@@ -295,18 +368,18 @@ function getSelectedRegion() {
         wavesurfer.loadDecodedBuffer(buffer)
     }
     wavesurfer.clearRegions();
-    setDisabled(true);
+    setDisabledWhenNoRegion(true);
 }
 
-function undoGetSelectedRegion(song) {
+function getOriginalSample(song) {
     wavesurfer.clearRegions();
     wavesurfer.empty()
     wavesurfer.load(song);
-    setDisabled(true);
+    setDisabledWhenNoRegion(true);
 }
 
 function deletePreviousRegion() {
-    setDisabled(false);
+    setDisabledWhenNoRegion(false);
     var regionList = wavesurfer.regions.list;
     if (Object.keys(regionList).length > 0) {
         var firstRegionID = Object.keys(regionList)[0];
@@ -315,7 +388,7 @@ function deletePreviousRegion() {
 }
 
 function deleteRegion() {
-    setDisabled(true);
+    setDisabledWhenNoRegion(true);
 	var regionList = wavesurfer.regions.list;
 	var region = regionList[Object.keys(regionList)[0]]
 
@@ -371,7 +444,7 @@ function resetAndLoadNewBuffer(finalBuffer = null) {
 }
 
 function emptyRegion() {
-    setDisabled(true);
+    setDisabledWhenNoRegion(true);
     var regionList = wavesurfer.regions.list;
 	var region = regionList[Object.keys(regionList)[0]]
 	
@@ -427,12 +500,10 @@ function emptyRegion() {
     }
 }
 
-function setDisabled(status) {
+function setDisabledWhenNoRegion(status) {
     document.querySelector('#delete_region').disabled = status;
     document.querySelector('#empty_region').disabled = status;
     document.querySelector('#get_selection_btn').disabled = status;
-    //document.querySelector('#fade_in').disabled = status;
-    //document.querySelector('#fade_out').disabled = status;
 }
 
 function getRegion() {
