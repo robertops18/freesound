@@ -3,10 +3,14 @@ var sound = "https://freesound.org" + document.getElementById("waveform").getAtt
 var wavesurfer = createWavesurfer(sound)
 
 document.body.onkeyup = function(event) {
-    keyPressed(event);
+    keyUp(event);
 }
-document.body.onkeydown = function(e) {
-    return !(e.keyCode == 32);
+document.body.onkeydown = function(event) {
+    if (event.keyCode == 32) {
+        return false;
+    } else {
+        keyDown(event);
+    }
 };
 
 var sound_name = document.getElementById("waveform").getAttribute("sound_name");
@@ -216,8 +220,6 @@ function toUndo(type, action) {
         action: action
     }
     undoArray.push(undoAction);
-    print('Storing in undo')
-    print(undoArray)
 }
 
 function toRedo(type, action) {
@@ -226,8 +228,6 @@ function toRedo(type, action) {
         action: action
     }
     redoArray.push(redoAction);
-    print('Storing in redo')
-    print(redoArray)
 }
 
 // Buffer related functions
@@ -647,15 +647,28 @@ function getIntervals(peaks) {
 
 // Key events
 
-function keyPressed(event) {
-    print(event);
+function keyUp(event) {
     switch (event.keyCode) {
         case 32: // space bar
             wavesurfer.playPause();
             break;
+    }
+}
+
+function keyDown(event) {
+    //print(event);
+    switch (event.keyCode) {
         case 8: // delete
             if (numOfRegions() > 0) {
+                toUndo('buffer', wavesurfer.backend.buffer);
                 deleteRegion();
+            }
+            break;
+        case 90: // z
+            if ((event.ctrlKey || event.metaKey) && !event.shiftKey) {
+                undo();
+            } else if ((event.ctrlKey || event.metaKey) && event.shiftKey) {
+                redo();
             }
             break;
     }
