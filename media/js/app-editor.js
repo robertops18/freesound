@@ -27,20 +27,20 @@ initQuerySelectors();
 initWavesurferEvents();
 
 // Knobs filters
-var lowpass_knob = createKnob("lowpass_knob", 0, 500);
-var highpass_knob = createKnob("highpass_knob", 0, 500);
-var bandpass_knob = createKnob("bandpass_knob", 0, 500);
-var lowshelf_knob = createKnob("lowshelf_knob", 0, 500);
-var highshelf_knob = createKnob("highshelf_knob", 0, 500);
-var peaking_knob = createKnob("peaking_knob", 0, 500);
-var notch_knob = createKnob("notch_knob", 0, 500);
-var allpass_knob = createKnob("allpass_knob", 0, 500);
+var lowpass_knob = createKnob("lowpass_knob", 0, 500, 'Hz');
+var highpass_knob = createKnob("highpass_knob", 0, 500, 'Hz');
+var bandpass_knob = createKnob("bandpass_knob", 0, 500, 'Hz');
+var lowshelf_knob = createKnob("lowshelf_knob", 0, 500, 'Hz');
+var highshelf_knob = createKnob("highshelf_knob", 0, 500, 'Hz');
+var peaking_knob = createKnob("peaking_knob", 0, 500, 'Hz');
+var notch_knob = createKnob("notch_knob", 0, 500, 'Hz');
+var allpass_knob = createKnob("allpass_knob", 0, 500, 'Hz');
 
 //Knobs effects
-var amplify_knob = createKnob("amplify_knob", 1, 5, 1);
-var fade_in_knob = createKnob("fade_in_knob", 1, 10, 1);
-var fade_out_knob = createKnob("fade_out_knob", 1, 10, 1);
-var bitcrush_knob = createKnob("bitcrush_knob", 4, 16, 4);
+var amplify_knob = createKnob("amplify_knob", 1, 5,'', 1);
+var fade_in_knob = createKnob("fade_in_knob", 1, 10, 'Seconds', 1);
+var fade_out_knob = createKnob("fade_out_knob", 1, 10, 'Seconds', 1);
+var bitcrush_knob = createKnob("bitcrush_knob", 4, 16, 'Bits',4);
 
 // Undo and redo data structures
 
@@ -534,12 +534,16 @@ function applyFilter(filterType, frequency) {
 	wavesurfer.backend.setFilter(filter);
 }
 
-function createKnob(divID, valMin, valMax, defaultValue = 0) {
+function createKnob(divID, valMin, valMax, label, defaultValue = 0) {
 	var myKnob = pureknob.createKnob(134, 134);
 	myKnob.setProperty('valMin', valMin);
 	myKnob.setProperty('valMax', valMax);
-    myKnob.setProperty('colorFG', '#4353FF');
+    myKnob.setProperty('colorFG', '#0A61FE');
     myKnob.setProperty('val', defaultValue);
+    myKnob.setProperty('angleStart', -0.75 * Math.PI);
+    myKnob.setProperty('angleEnd', 0.75 * Math.PI);
+    myKnob.setProperty('label', label);
+    myKnob.setProperty('colorLabel', '#0A61FE');
 	var node = myKnob.node();
 	var elem = document.getElementById(divID);
 	elem.appendChild(node);
