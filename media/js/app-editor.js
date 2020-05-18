@@ -1,6 +1,7 @@
 //var song = 'http://ia902606.us.archive.org/35/items/shortpoetry_047_librivox/song_cjrg_teasdale_64kb.mp3'
 var sound = "https://freesound.org" + document.getElementById("waveform").getAttribute("sound_url");
-var wavesurfer = createWavesurfer(sound)
+var wavesurfer = createWavesurfer(sound);
+var pitchShifter;
 
 document.body.onkeyup = function(event) {
     keyUp(event);
@@ -16,9 +17,6 @@ document.body.onkeydown = function(event) {
 var sound_name = document.getElementById("waveform").getAttribute("sound_name");
 var sound_id = document.getElementById("waveform").getAttribute("sound_id");
 var username = document.getElementById("waveform").getAttribute("username");
-
-
-var AudioContext = window.AudioContext || window.webkitAudioContext;  // Safari and old versions of Chrome
 
 // Query Selectors
 initQuerySelectors();
@@ -42,8 +40,13 @@ var fade_in_knob = createKnob("fade_in_knob", 1, 10, 'Seconds', 1);
 var fade_out_knob = createKnob("fade_out_knob", 1, 10, 'Seconds', 1);
 var bitcrush_knob = createKnob("bitcrush_knob", 4, 16, 'Bits',4);
 
-// Undo and redo data structures
+// Pitch slider
+const pitchSlider = document.getElementById('pitchSlider');
+pitchSlider.addEventListener('input', function () {
+    pitchShifter.pitch = this.value;
+});
 
+// Undo and redo data structures
 var undoArray = []
 var redoArray = []
 
@@ -100,6 +103,9 @@ function initQuerySelectors() {
     document.querySelector('#bitcrush').onclick = function () {
         applyBitcrushEffect(bitcrush_knob.getValue());
     }
+    document.querySelector('#init_pitch_shifter').onclick = function () {
+        initPitchShifter();
+    }
     
     querySelectorFilters();
 }
@@ -147,33 +153,41 @@ function initWavesurferEvents() {
 
 function createWavesurfer(song) {
     var wavesurfer = WaveSurfer.create({
-      container: '#waveform',
-      waveColor: '#f5a52c',
-      progressColor: '#b36d04',
-      cursorColor: '#FFFFFF',
-      backgroundColor: '#111212',
-      barWidth: 3,
-      barRadius: 3,
-      cursorWidth: 1,
-      height: 200,
-      plugins: [
-        WaveSurfer.cursor.create({
-          showTime: true,
-          opacity: 1,
-          customShowTimeStyle: {
-            'background-color': '#000',
-            color: '#fff',
-            padding: '2px',
-            'font-size': '10px'
-          }
-        }),
-        WaveSurfer.regions.create({drag:false, color: 'rgba(256, 256, 256, 1)'})
+        container: '#waveform',
+        waveColor: '#f5a52c',
+        progressColor: '#b36d04',
+        cursorColor: '#FFFFFF',
+        backgroundColor: '#111212',
+        barWidth: 3,
+        barRadius: 3,
+        cursorWidth: 1,
+        height: 200,
+        plugins: [
+            WaveSurfer.cursor.create({
+              showTime: true,
+              opacity: 1,
+              customShowTimeStyle: {
+                'background-color': '#000',
+                color: '#fff',
+                padding: '2px',
+                'font-size': '10px'
+              }
+            }),
+            WaveSurfer.regions.create({drag:false, color: 'rgba(256, 256, 256, 1)'})
         ]
     });
     wavesurfer.enableDragSelection({drag:false, color: 'rgba(256, 256, 256, 0.3)'});
     wavesurfer.load(song);
-	
+
     return wavesurfer;
+}
+
+function initPitchShifter() {
+    pitchShifter = getPitchShifter(wavesurfer.backend.ac, wavesurfer.backend.buffer);
+    pitchShifter.pitch = pitchSlider.value;
+    pitchShifter.connect(wavesurfer.backend.gainNode);
+    print(pitchShifter)
+    //wavesurfer.backend.gainNode.connect(wavesurfer.backend.ac.destination);
 }
 
 // Print aux function
