@@ -3,6 +3,8 @@ var sound = "https://freesound.org" + document.getElementById("waveform").getAtt
 var wavesurfer = createWavesurfer(sound);
 var pitchShifter;
 
+var AudioContext = window.AudioContext || window.webkitAudioContext;
+
 document.body.onkeyup = function(event) {
     keyUp(event);
 }
