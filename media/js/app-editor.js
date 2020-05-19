@@ -1,4 +1,3 @@
-//var song = 'http://ia902606.us.archive.org/35/items/shortpoetry_047_librivox/song_cjrg_teasdale_64kb.mp3'
 var sound = "https://freesound.org" + document.getElementById("waveform").getAttribute("sound_url");
 var wavesurfer = createWavesurfer(sound);
 var pitchShifter;
@@ -51,6 +50,9 @@ pitchSlider.addEventListener('input', function () {
 // Undo and redo data structures
 var undoArray = []
 var redoArray = []
+
+// Array of applied filters for undo and redo
+var appliedFilters = []
 
 // Initialization functions 
 function initQuerySelectors() {
@@ -114,28 +116,35 @@ function initQuerySelectors() {
 
 function querySelectorFilters() {
     document.querySelector('#lowpass_filter_btn').onclick = function () {
-        toUndo('filter', null);
+        toUndo('filter', {filterType: 'lowpass', frequency: lowpass_knob.getValue()});
 		applyFilter('lowpass', lowpass_knob.getValue());
 	}
 	document.querySelector('#highpass_filter_btn').onclick = function () {
+        toUndo('filter', {filterType: 'highpass', frequency: highpass_knob.getValue()});
 		applyFilter('highpass', highpass_knob.getValue());
 	}
 	document.querySelector('#bandpass_filter_btn').onclick = function () {
+        toUndo('filter', {filterType: 'bandpass', frequency: bandpass_knob.getValue()});
 		applyFilter('bandpass', bandpass_knob.getValue());
 	}
 	document.querySelector('#lowshelf_filter_btn').onclick = function () {
+        toUndo('filter', {filterType: 'lowshelf', frequency: lowshelf_knob.getValue()});
 		applyFilter('lowshelf', lowshelf_knob.getValue());
 	}
 	document.querySelector('#highshelf_filter_btn').onclick = function () {
+        toUndo('filter', {filterType: 'highshelf', frequency: highshelf_knob.getValue()});
 		applyFilter('highshelf', highshelf_knob.getValue());
 	}
 	document.querySelector('#peaking_filter_btn').onclick = function () {
+        toUndo('filter', {filterType: 'peaking', frequency: peaking_knob.getValue()});
 		applyFilter('peaking', peaking_knob.getValue());
 	}
 	document.querySelector('#notch_filter_btn').onclick = function () {
+        toUndo('filter', {filterType: 'notch', frequency: notch_knob.getValue()});
 		applyFilter('notch', notch_knob.getValue());
 	}
 	document.querySelector('#allpass_filter_btn').onclick = function () {
+        toUndo('filter', {filterType: 'allpass', frequency: allpass_knob.getValue()});
 		applyFilter('allpass', allpass_knob.getValue());
 	}
 }
@@ -201,16 +210,26 @@ function print(s) {
 
 function undo() {
     if (undoArray.length > 0) {
-        toRedo('buffer', wavesurfer.backend.buffer);
         var undoAction = undoArray.pop();
+        document.querySelector('#undo').disabled = undoArray.length === 0;
         switch (undoAction.type) {
             case 'buffer':
+                toRedo('buffer', wavesurfer.backend.buffer);
                 var previousBuffer = undoAction.action;
                 wavesurfer.empty()
                 wavesurfer.loadDecodedBuffer(previousBuffer);
                 break;
             case 'filter': // TODO: Undo functions with filters
-                print(wavesurfer.getFilters());
+                toRedo('filter', undoAction.action);
+                // 1. Pop filter from array
+                appliedFilters.pop()
+                // 2. Cancel its behaviour or apply previous one
+                if (appliedFilters.length > 0) {
+                    var lastFilter = appliedFilters[appliedFilters.length - 1]
+                    applyFilter(lastFilter.filterType, lastFilter.frequency, true);
+                } else {
+                    cancelFilter()
+                }
                 break;
         }
     } else {
@@ -220,15 +239,19 @@ function undo() {
 
 function redo() {
     if (redoArray.length > 0) {
-        toUndo('buffer', wavesurfer.backend.buffer);
         var redoAction = redoArray.pop();
+        document.querySelector('#redo').disabled = redoArray.length === 0;
         switch (redoAction.type) {
             case 'buffer':
+                toUndo('buffer', wavesurfer.backend.buffer);
                 var previousBuffer = redoAction.action;
                 wavesurfer.empty()
                 wavesurfer.loadDecodedBuffer(previousBuffer);
                 break;
             case 'filter': // TODO: Redo functions with filters
+                toUndo('filter', redoAction.action);
+                // Apply filter
+                applyFilter(redoAction.action.filterType, redoAction.action.frequency);
                 break;
         }
     } else {
@@ -242,6 +265,8 @@ function toUndo(type, action) {
         action: action
     }
     undoArray.push(undoAction);
+    document.querySelector('#undo').disabled = undoArray.length === 0;
+    console.log('Undo', undoArray);
 }
 
 function toRedo(type, action) {
@@ -250,6 +275,8 @@ function toRedo(type, action) {
         action: action
     }
     redoArray.push(redoAction);
+    document.querySelector('#redo').disabled = redoArray.length === 0;
+    console.log('Redo', redoArray);
 }
 
 // Buffer related functions
@@ -543,11 +570,18 @@ function numOfRegions() {
 }
 
 // Filter related functions
-function applyFilter(filterType, frequency) {
+function applyFilter(filterType, frequency, fromCancel = false) {
 	var filter = wavesurfer.backend.ac.createBiquadFilter();
 	filter.type = filterType;
 	filter.frequency.value = frequency;
 	wavesurfer.backend.setFilter(filter);
+
+	if (!fromCancel) {
+	    appliedFilters.push({
+            filterType: filterType,
+            frequency: frequency
+        });
+    }
 }
 
 function createKnob(divID, valMin, valMax, label, defaultValue = 0) {
@@ -564,6 +598,10 @@ function createKnob(divID, valMin, valMax, label, defaultValue = 0) {
 	var elem = document.getElementById(divID);
 	elem.appendChild(node);
 	return myKnob;
+}
+
+function cancelFilter() {
+    applyFilter('allpass', 0, true);
 }
 
 function resetFilters() {

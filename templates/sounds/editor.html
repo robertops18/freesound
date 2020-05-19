@@ -71,8 +71,8 @@
                     <button class="btn btn-success m-1" id="undo_get_selection_btn">Get Original Sample</button>
                     <button class="btn btn-success m-1" id="reset_filters">Reset Filters</button>
                     <button class="btn btn-success m-1" id="reverse">Reverse</button>
-                    <button class="btn btn-success m-1" id="undo" title="Ctrl+Z">Undo</button>
-                    <button class="btn btn-success m-1" id="redo" title="Ctrl+Shift+Z">Redo</button>
+                    <button class="btn btn-success m-1" id="undo" title="Ctrl+Z" disabled>Undo</button>
+                    <button class="btn btn-success m-1" id="redo" title="Ctrl+Shift+Z" disabled>Redo</button>
                 </div>
                 <div class="row p-1 justify-content-center">
                     <i class="fas fa-search-minus mr-2"></i>
@@ -213,5 +213,11 @@
 {% endcache %}
 
     <script src="{{media_url}}js/app-editor.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        $(function(){
+            document.querySelector('#undo').disabled = undoArray.length === 0;
+            document.querySelector('#redo').disabled = redoArray.length === 0;
+        });
+    </script>
 
 {% endblock section_content %}
