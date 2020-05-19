@@ -71,10 +71,116 @@
                 Redo
             </button>
             <button class="btn btn-success m-1" id="export">Download edited sound</button>
-            <button class="btn btn-info m-1" id="help">
+            <button class="btn btn-info m-1" id="help" data-toggle="modal" data-target="#helpModal">
                 <i class="fa fa-question-circle fa-xs"></i>
                 Help
             </button>
+            <div class="modal fade" id="helpModal" tabindex="-1" role="dialog" aria-labelledby="helpModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="helpModalLabel">Freesound Editor Help</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Welcome to the Freesound online audio editor! These are the available operations:</p>
+                            <ul>
+                                <li>
+                                    General operations
+                                    <ul>
+                                        <li>
+                                            Play and pause (Spacebar)
+                                        </li>
+                                        <li>
+                                            Skip backward (Left arrow) and forward (Right arrow)
+                                        </li>
+                                        <li>
+                                            Undo (Ctrl or Cmd + Z) and redo (Ctrl or Cmd + Shift + Z)
+                                        </li>
+                                        <li>
+                                            Download edited sample
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    Waveform related actions
+                                    <ul>
+                                        <li>
+                                            Zoom to selected region
+                                        </li>
+                                        <li>
+                                            Delete selected region
+                                        </li>
+                                        <li>
+                                            Clear selected region
+                                        </li>
+                                        <li>
+                                            Get original sample
+                                        </li>
+                                        <li>
+                                            Reset filters
+                                        </li>
+                                        <li>
+                                            Reverse sample
+                                        </li>
+                                        <li>
+                                            Zoom in and out
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    Filters
+                                    <ul>
+                                        <li>
+                                            Lowpass filter
+                                        </li>
+                                        <li>
+                                            Highpass filter
+                                        </li>
+                                        <li>
+                                            Bandpass filter
+                                        </li>
+                                        <li>
+                                            Lowshelf filter
+                                        </li>
+                                        <li>
+                                            Highshelf filter
+                                        </li>
+                                        <li>
+                                            Peaking filter
+                                        </li>
+                                        <li>
+                                            Notch filter
+                                        </li>
+                                        <li>
+                                            Allpass filter
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    Effects
+                                    <ul>
+                                        <li>
+                                            Amplify waveform
+                                        </li>
+                                        <li>
+                                            Fade in and out
+                                        </li>
+                                        <li>
+                                            Bitcrush effect
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Start editing!</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div id="accordion1">
