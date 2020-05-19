@@ -184,7 +184,10 @@ function createWavesurfer(song) {
                 'font-size': '10px'
               }
             }),
-            WaveSurfer.regions.create({drag:false, color: 'rgba(256, 256, 256, 1)'})
+            WaveSurfer.regions.create({drag:false, color: 'rgba(256, 256, 256, 1)'}),
+            WaveSurfer.timeline.create({
+                container: '#wave-timeline'
+            })
         ]
     });
     wavesurfer.enableDragSelection({drag:false, color: 'rgba(256, 256, 256, 0.3)'});
@@ -266,7 +269,6 @@ function toUndo(type, action) {
     }
     undoArray.push(undoAction);
     document.querySelector('#undo').disabled = undoArray.length === 0;
-    console.log('Undo', undoArray);
 }
 
 function toRedo(type, action) {
@@ -276,7 +278,6 @@ function toRedo(type, action) {
     }
     redoArray.push(redoAction);
     document.querySelector('#redo').disabled = redoArray.length === 0;
-    console.log('Redo', redoArray);
 }
 
 // Buffer related functions
@@ -645,7 +646,7 @@ function keyUp(event) {
 }
 
 function keyDown(event) {
-    print(event);
+    //print(event);
     switch (event.keyCode) {
         case 8: // delete
             if (numOfRegions() > 0) {
