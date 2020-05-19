@@ -44,7 +44,7 @@
     </div>
     <div id="waveform" sound_url="{{ sound.locations.preview.LQ.mp3.url }}" sound_name="{{ sound.original_filename }}" sound_id="{{ sound_id }}" username="{{ username }}"></div>
     <div class="container">
-        <div class="row p-1 justify-content-center">
+        <div class="row pt-1 justify-content-center">
             <button class="btn btn-primary m-1" onclick="wavesurfer.skipBackward()">
                 <i class="fa fa-step-backward fa-xs"></i>
                 Backward
@@ -60,6 +60,8 @@
                 <i class="fa fa-step-forward fa-xs"></i>
                 Forward
             </button>
+        </div>
+        <div class="row p-1 justify-content-center">
             <button class="btn btn-success m-1" id="undo" title="Ctrl+Z" disabled>
                 <i class="fa fa-undo fa-xs"></i>
                 Undo
@@ -69,6 +71,10 @@
                 Redo
             </button>
             <button class="btn btn-success m-1" id="export">Download edited sound</button>
+            <button class="btn btn-info m-1" id="help">
+                <i class="fa fa-question-circle fa-xs"></i>
+                Help
+            </button>
         </div>
     </div>
     <div id="accordion1">
