@@ -8,7 +8,7 @@ document.body.onkeyup = function(event) {
     keyUp(event);
 }
 document.body.onkeydown = function(event) {
-    if (event.keyCode == 32) {
+    if (event.keyCode == 32 || event.keyCode == 39 || event.keyCode == 37) {
         return false;
     } else {
         keyDown(event);
@@ -635,11 +635,17 @@ function keyUp(event) {
         case 32: // space bar
             wavesurfer.playPause();
             break;
+        case 37: // arrow left
+            wavesurfer.skipBackward();
+            break;
+        case 39: // arrow right
+            wavesurfer.skipForward();
+            break;
     }
 }
 
 function keyDown(event) {
-    //print(event);
+    print(event);
     switch (event.keyCode) {
         case 8: // delete
             if (numOfRegions() > 0) {
