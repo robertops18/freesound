@@ -95,8 +95,7 @@ function initQuerySelectors() {
         exportBufferToFile();
     }
     document.querySelector('#play_btn').onclick = function () {
-        wavesurfer.playPause();
-        //playBeats();
+        playPause();
     }
     document.querySelector('#undo').onclick = function () {
         undo();
@@ -160,6 +159,15 @@ function initWavesurferEvents() {
 	wavesurfer.on('region-created', function() {
 		deletePreviousRegion();
 	});
+
+	/*
+	wavesurfer.on('finish', function() {
+	    print('FINISH!')
+		wavesurfer.backend.gainNode.gain.cancelScheduledValues(wavesurfer.backend.ac.currentTime);
+	    wavesurfer.backend.gainNode.gain.setValueAtTime(1.0, 0.0);
+	    print(wavesurfer.backend.gainNode)
+	});
+	 */
 }
 
 function createWavesurfer(song) {
@@ -202,6 +210,10 @@ function initPitchShifter() {
     pitchShifter.connect(wavesurfer.backend.gainNode);
     print(pitchShifter)
     //wavesurfer.backend.gainNode.connect(wavesurfer.backend.ac.destination);
+}
+
+function playPause() {
+    wavesurfer.playPause();
 }
 
 // Print aux function
@@ -371,23 +383,6 @@ function encodeWAV(originalBuffer){
     return blob;
   }
 
-function fadeIn(duration) { //TODO
-    var gainNode = wavesurfer.backend.gainNode;
-    var sm = getSmoothFade(wavesurfer.backend.ac, gainNode, {type: 'linear', fadeLength: duration});
-    print(sm);
-    print(wavesurfer.backend);
-    sm.fadeIn();
-    //gainNode.gain.setValueAtTime(0, wavesurfer.getCurrentTime());
-    //gainNode.gain.linearRampToValueAtTime(3.0, wavesurfer.getCurrentTime() + duration);
-}
-
-function fadeOut(duration) {
-    print(wavesurfer.getCurrentTime())
-    var gainNode = wavesurfer.backend.gainNode;
-    gainNode.gain.linearRampToValueAtTime(0.01, wavesurfer.getCurrentTime() + duration);
-    print(gainNode.gain);
-}
-
 function reverse() {
     var buffer = wavesurfer.backend.buffer;
     Array.prototype.reverse.call( buffer.getChannelData(0) );
@@ -396,6 +391,21 @@ function reverse() {
     }
     wavesurfer.empty();
     wavesurfer.loadDecodedBuffer(buffer);
+}
+
+// Gain related functions
+
+function fadeIn(duration) { //TODO
+    var gainNode = wavesurfer.backend.gainNode;
+    gainNode.gain.cancelScheduledValues( wavesurfer.backend.ac.currentTime );
+    gainNode.gain.setValueAtTime( 0.00001, wavesurfer.backend.ac.currentTime );
+    gainNode.gain.linearRampToValueAtTime( 1.0, wavesurfer.backend.ac.currentTime + duration );
+}
+
+function fadeOut(duration) {
+    var gainNode = wavesurfer.backend.gainNode;
+    var sm = getSmoothFade(wavesurfer.backend.ac, gainNode, {type: 'linear'});
+    sm.fadeOut();
 }
 
 function amplify(value) {
@@ -562,7 +572,7 @@ function setDisabledWhenNoRegion(status) {
 
 function getRegion() {
     var regionList = wavesurfer.regions.list;
-    var region = regionList[Object.keys(regionList)[0]]
+    var region = numOfRegions() > 0 ? regionList[Object.keys(regionList)[0]] : null
     return region;
 }
 
@@ -634,7 +644,7 @@ function applyBitcrushEffect(bits) {
 function keyUp(event) {
     switch (event.keyCode) {
         case 32: // space bar
-            wavesurfer.playPause();
+            playPause();
             break;
         case 37: // arrow left
             wavesurfer.skipBackward();
