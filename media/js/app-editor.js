@@ -207,7 +207,7 @@ function createWavesurfer(song) {
 function initPitchShifter() {
     pitchShifter = getPitchShifter(wavesurfer.backend.ac, wavesurfer.backend.buffer);
     pitchShifter.pitch = pitchSlider.value;
-    pitchShifter.connect(wavesurfer.backend.gainNode);
+    //pitchShifter.connect(wavesurfer.backend.gainNode);
     print(pitchShifter)
     //wavesurfer.backend.gainNode.connect(wavesurfer.backend.ac.destination);
 }
@@ -399,12 +399,12 @@ function fadeIn(duration) { //TODO
     var gainNode = wavesurfer.backend.gainNode;
     gainNode.gain.cancelScheduledValues( wavesurfer.backend.ac.currentTime );
     gainNode.gain.setValueAtTime( 0.00001, wavesurfer.backend.ac.currentTime );
-    gainNode.gain.linearRampToValueAtTime( 1.0, wavesurfer.backend.ac.currentTime + duration );
+    gainNode.gain.exponentialRampToValueAtTime( 1.0, wavesurfer.backend.ac.currentTime + duration );
 }
 
 function fadeOut(duration) {
     var gainNode = wavesurfer.backend.gainNode;
-    var sm = getSmoothFade(wavesurfer.backend.ac, gainNode, {type: 'linear'});
+    var sm = getSmoothFade(wavesurfer.backend.ac, gainNode, {type: 'exponential'});
     sm.fadeOut();
 }
 
