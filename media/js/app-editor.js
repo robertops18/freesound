@@ -106,9 +106,11 @@ function initQuerySelectors() {
     document.querySelector('#bitcrush').onclick = function () {
         applyBitcrushEffect(bitcrush_knob.getValue());
     }
+    /*
     document.querySelector('#init_pitch_shifter').onclick = function () {
         initPitchShifter();
     }
+     */
     
     querySelectorFilters();
 }
