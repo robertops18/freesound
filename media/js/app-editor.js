@@ -41,11 +41,13 @@ var fade_in_knob = createKnob("fade_in_knob", 1, 10, 'Seconds', 1);
 var fade_out_knob = createKnob("fade_out_knob", 1, 10, 'Seconds', 1);
 var bitcrush_knob = createKnob("bitcrush_knob", 4, 16, 'Bits',4);
 
+/*
 // Pitch slider
 const pitchSlider = document.getElementById('pitchSlider');
 pitchSlider.addEventListener('input', function () {
     pitchShifter.pitch = this.value;
 });
+*/
 
 // Undo and redo data structures
 var undoArray = []
