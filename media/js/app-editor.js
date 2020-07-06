@@ -285,6 +285,7 @@ function toUndo(type, action) {
     }
     undoArray.push(undoAction);
     document.querySelector('#undo').disabled = undoArray.length === 0;
+    document.querySelector('#undo').style.pointerEvents = undoArray.length === 0 ? 'none' : 'auto';
 }
 
 function toRedo(type, action) {
@@ -294,6 +295,7 @@ function toRedo(type, action) {
     }
     redoArray.push(redoAction);
     document.querySelector('#redo').disabled = redoArray.length === 0;
+    document.querySelector('#redo').style.pointerEvents = redoArray.length === 0 ? 'none' : 'auto';
 }
 
 // Buffer related functions
@@ -572,6 +574,10 @@ function setDisabledWhenNoRegion(status) {
     document.querySelector('#delete_region').disabled = status;
     document.querySelector('#empty_region').disabled = status;
     document.querySelector('#get_selection_btn').disabled = status;
+
+    document.querySelector('#delete_region').style.pointerEvents = status === true ? 'none' : 'auto';
+    document.querySelector('#empty_region').style.pointerEvents = status === true ? 'none' : 'auto';
+    document.querySelector('#get_selection_btn').style.pointerEvents = status === true ? 'none' : 'auto';
 }
 
 function getRegion() {

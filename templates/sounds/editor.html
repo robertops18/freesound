@@ -32,6 +32,7 @@
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.cursor.js"></script>
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.timeline.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 {% endblock head %}
@@ -40,44 +41,63 @@
 
 {% cache 3600 sound_header sound.id is_explicit %}  {# cache both blurred and normal version for explicit sounds #}
 
-    <div id="single_sample_header" class="{% if is_explicit %}blur{% endif %}">
-        {% if sound.pack %}<a href="{% url 'pack' username sound.pack.id %}">{{sound.pack.name}}</a>  &#187; {% endif %}<a href="#">{{sound.original_filename}}</a>
-    </div>
-    <div id="waveform" sound_url="{{ sound.locations.preview.LQ.mp3.url }}" sound_name="{{ sound.original_filename }}" sound_id="{{ sound_id }}" username="{{ username }}"></div>
-    <div id="wave-timeline"></div>
-    <div class="container">
-        <div class="row pt-2 justify-content-center">
-            <button class="btn btn-primary m-1" onclick="wavesurfer.skipBackward()">
-                <i class="fa fa-step-backward fa-xs"></i>
-                Backward
-            </button>
-            <button type="button" class="btn btn-primary m-1" id="play_btn">
-                <i class="fas fa-play fa-xs"></i>
-                Play
-                /
-                <i class="fas fa-pause fa-xs"></i>
-                Pause
-            </button>
-            <button class="btn btn-primary m-1" onclick="wavesurfer.skipForward()">
-                <i class="fa fa-step-forward fa-xs"></i>
-                Forward
-            </button>
+    <div class="row pl-2" style="align-items: baseline;">
+        <div id="single_sample_header" class="{% if is_explicit %}blur{% endif %}">
+            {% if sound.pack %}<a href="{% url 'pack' username sound.pack.id %}">{{sound.pack.name}}</a>  &#187; {% endif %}<a href="#">{{sound.original_filename}}</a>
         </div>
-        <div class="row p-1 justify-content-center">
-            <button class="btn btn-success m-1" id="undo" title="Ctrl+Z" disabled>
-                <i class="fa fa-undo fa-xs"></i>
-                Undo
+        <div class="border rounded m-2" id="play_pause">
+                <button class="btn btn-primary m-1" onclick="wavesurfer.skipBackward()" data-toggle="tooltip" data-placement="bottom" title="Back 2 seconds">
+                    <i class="fa fa-step-backward"></i>
+                </button>
+                <button type="button" class="btn btn-primary m-1" id="play_btn" data-toggle="tooltip" data-placement="bottom" title="Play/Pause">
+                    <i class="fas fa-play"></i>
+                    /
+                    <i class="fas fa-pause" ></i>
+                </button>
+                <button class="btn btn-primary m-1" onclick="wavesurfer.skipForward()" data-toggle="tooltip" data-placement="bottom" title="Advance 2 seconds">
+                    <i class="fa fa-step-forward"></i>
+                </button>
+            </div>
+        <div class="border rounded m-2" id="undo_redo">
+            <div class="tooltip-wrapper" data-toggle="tooltip" data-placement="bottom" title="Undo" style="display: inline-block;">
+                <button class="btn btn-success m-1" id="undo" disabled style="pointer-events: none;">
+                    <i class="fa fa-undo"></i>
+                </button>
+            </div>
+            <div class="tooltip-wrapper" data-toggle="tooltip" data-placement="bottom" title="Redo" style="display: inline-block;">
+                <button class="btn btn-success m-1" id="redo" disabled style="pointer-events: none;">
+                    <i class="fa fa-redo"></i>
+                </button>
+            </div>
+            <div class="tooltip-wrapper" data-toggle="tooltip" data-placement="bottom" title="Clear region" style="display: inline-block;">
+                <button class="btn btn-success m-1" id="empty_region" disabled style="pointer-events: none;">
+                    <i class="fa fa-backspace"></i>
+                </button>
+            </div>
+            <div class="tooltip-wrapper" data-toggle="tooltip" data-placement="bottom" title="Delete region" style="display: inline-block;">
+                <button class="btn btn-success m-1" id="delete_region" disabled style="pointer-events: none;">
+                    <i class="fa fa-trash-alt"></i>
+                </button>
+            </div>
+            <div class="tooltip-wrapper" data-toggle="tooltip" data-placement="bottom" title="Get selected region" style="display: inline-block;">
+                <button class="btn btn-success m-1" id="get_selection_btn" disabled style="pointer-events: none;">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <button class="btn btn-success m-1" id="undo_get_selection_btn" data-toggle="tooltip" data-placement="bottom" title="Get original sample">
+                <i class="fa fa-file-audio"></i>
             </button>
-            <button class="btn btn-success m-1" id="redo" title="Ctrl+Shift+Z" disabled>
-                <i class="fa fa-redo fa-xs"></i>
-                Redo
+
+            <button class="btn btn-success m-1" id="export" data-toggle="tooltip" data-placement="bottom" title="Download edited sample">
+                <i class="fa fa-download"></i>
             </button>
-            <button class="btn btn-success m-1" id="export">Download edited sound</button>
-            <button class="btn btn-info m-1" id="help" data-toggle="modal" data-target="#helpModal">
-                <i class="fa fa-question-circle fa-xs"></i>
-                Help
+            <div class="tooltip-wrapper" data-toggle="tooltip" data-placement="bottom" title="Help" style="display: inline-block;">
+                <button class="btn btn-info m-1" id="help" data-toggle="modal" data-target="#helpModal">
+                <i class="fa fa-question-circle"></i>
             </button>
-            <div class="modal fade" id="helpModal" tabindex="-1" role="dialog" aria-labelledby="helpModalLabel" aria-hidden="true">
+            </div>
+        </div>
+        <div class="modal fade" id="helpModal" tabindex="-1" role="dialog" aria-labelledby="helpModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -183,8 +203,11 @@
                     </div>
                 </div>
             </div>
-        </div>
     </div>
+
+    <div id="waveform" sound_url="{{ sound.locations.preview.LQ.mp3.url }}" sound_name="{{ sound.original_filename }}" sound_id="{{ sound_id }}" username="{{ username }}"></div>
+    <div id="wave-timeline"></div>
+
     <div id="accordion1">
         <div class="card m-2">
             <div class="card-header" id="headingOne"  data-toggle="collapse" data-target="#collapseActions" aria-expanded="true" aria-controls="collapseActions">
@@ -195,10 +218,6 @@
             </div>
             <div id="collapseActions" class="collapse" aria-labelledby="headingOne" data-parent="#accordion1">
                 <div class="row p-1 justify-content-center">
-                    <button class="btn btn-success m-1" id="get_selection_btn" disabled>Get Selected Region</button>
-                    <button class="btn btn-success m-1" id="delete_region" disabled>Delete Region</button>
-                    <button class="btn btn-success m-1" id="empty_region" disabled>Clear Region</button>
-                    <button class="btn btn-success m-1" id="undo_get_selection_btn">Get Original Sample</button>
                     <button class="btn btn-success m-1" id="reset_filters">Reset Filters</button>
                     <button class="btn btn-success m-1" id="reverse">Reverse</button>
                 </div>
@@ -341,5 +360,12 @@
 {% endcache %}
 
     <script src="{{media_url}}js/app-editor.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip({
+                trigger: 'hover'
+            })
+        })
+    </script>
 
 {% endblock section_content %}
