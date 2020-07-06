@@ -2,6 +2,7 @@ var sound = "https://freesound.org" + document.getElementById("waveform").getAtt
 var wavesurfer = createWavesurfer(sound);
 var pitchShifter;
 
+var zoomValueInit = 0
 var zoomValue = 0
 var zoomRatio = 5
 
@@ -66,7 +67,7 @@ function initQuerySelectors() {
         wavesurfer.zoom(zoomValue);
     }
     document.querySelector('#zoom_out').onclick = function () {
-        if (zoomValue > 0) {
+        if (zoomValue > zoomValueInit) {
             zoomValue -= zoomRatio
             wavesurfer.zoom(zoomValue);
         }
@@ -173,6 +174,11 @@ function initWavesurferEvents() {
 	wavesurfer.on('region-created', function() {
 		deletePreviousRegion();
 	});
+
+	wavesurfer.on('ready', function() {
+	    zoomValueInit = 900 / wavesurfer.getDuration();
+	    zoomValue = zoomValueInit
+    })
 
 	/*
 	wavesurfer.on('finish', function() {
