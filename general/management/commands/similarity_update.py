@@ -69,7 +69,7 @@ class Command(LoggingBaseCommand):
 
         limit = int(options['limit'])
         freesound_extractor_version = options['freesound_extractor_version']
-        console_logger.info(limit, freesound_extractor_version)
+        console_logger.info("limit: %s, version: %s", limit, freesound_extractor_version)
 
         if options['force']:
             to_be_added = Sound.objects.filter(analysis_state='OK', moderation_state='OK').order_by('id')[:limit]
@@ -119,4 +119,4 @@ class Command(LoggingBaseCommand):
                 console_logger.error('Unexpected error while trying to add sound (id: %i, %i of %i): \n\t%s'
                                      % (sound.id, count+1, N, str(e)))
 
-        self.log_start({'n_sounds_added': to_be_added.count()})
+        self.log_end({'n_sounds_added': to_be_added.count()})

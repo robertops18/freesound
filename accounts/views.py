@@ -69,7 +69,7 @@ from sounds.models import Sound, Pack, Download, SoundLicenseHistory, BulkUpload
 from utils.cache import invalidate_template_cache
 from utils.dbtime import DBTime
 from utils.encryption import create_hash
-from utils.filesystem import generate_tree, remove_directory_if_empty
+from utils.filesystem import generate_tree, remove_directory_if_empty, create_directories
 from utils.images import extract_square
 from utils.mail import send_mail_template, send_mail_template_to_support
 from utils.mirror_files import copy_avatar_to_mirror_locations, \
@@ -237,7 +237,7 @@ def send_activation(user):
         'username': username,
         'hash': uid_hash
     }
-    send_mail_template(u'Your activation link.', 'accounts/email_activation.txt', tvars, user_to=user)
+    send_mail_template(settings.EMAIL_SUBJECT_ACTIVATION_LINK, 'accounts/email_activation.txt', tvars, user_to=user)
 
 
 def resend_activation(request):
@@ -267,7 +267,7 @@ def username_reminder(request):
 
             try:
                 user = User.objects.get(email__iexact=email)
-                send_mail_template(u'Username reminder.', 'accounts/email_username_reminder.txt',
+                send_mail_template(settings.EMAIL_SUBJECT_USERNAME_REMINDER, 'accounts/email_username_reminder.txt',
                                    {'user': user}, user_to=user)
             except User.DoesNotExist:
                 pass
@@ -415,11 +415,7 @@ def edit(request):
 @transaction.atomic()
 def handle_uploaded_image(profile, f):
     upload_logger.info("\thandling profile image upload")
-    try:
-        os.mkdir(os.path.dirname(profile.locations("avatar.L.path")))
-    except Exception as e:
-        upload_logger.error("\tfailed creating directory with error: %s" % str(e))
-        pass
+    create_directories(os.path.dirname(profile.locations("avatar.L.path")), exist_ok=True)
 
     ext = os.path.splitext(os.path.basename(f.name))[1]
     tmp_image_path = tempfile.mktemp(suffix=ext, prefix=str(profile.user.id))
@@ -471,10 +467,7 @@ def describe(request):
         csv_form = BulkDescribeForm(request.POST, request.FILES, prefix='bulk')
         if csv_form.is_valid():
             directory = os.path.join(settings.CSV_PATH, str(request.user.id))
-            try:
-                os.mkdir(directory)
-            except:
-                pass
+            create_directories(directory, exist_ok=True)
 
             extension = csv_form.cleaned_data['csv_file'].name.rsplit('.', 1)[-1].lower()
             path = os.path.join(directory, str(uuid.uuid4()) + '.%s' % extension)
@@ -903,11 +896,7 @@ def handle_uploaded_file(user_id, f):
     # handle a file uploaded to the app. Basically act as if this file was uploaded through FTP
     directory = os.path.join(settings.UPLOADS_PATH, str(user_id))
     upload_logger.info("\thandling file upload")
-    try:
-        os.mkdir(directory)
-    except:
-        upload_logger.error("\tfailed creating directory, probably already exist")
-        pass
+    create_directories(directory, exist_ok=True)
     path = os.path.join(directory, os.path.basename(f.name))
     try:
         upload_logger.info("\topening file: %s", path)
@@ -1105,7 +1094,7 @@ def email_reset(request):
                     'user': user,
                     'token': default_token_generator.make_token(user),
                 }
-                send_mail_template(u'Email address changed',
+                send_mail_template(settings.EMAIL_SUBJECT_EMAIL_CHANGED,
                                    'accounts/email_reset_email.txt', tvars,
                                    email_to=email)
 
@@ -1155,7 +1144,7 @@ def email_reset_complete(request, uidb36=None, token=None):
 
     # Send email to the old address notifying about the change
     tvars = {'old_email': old_email, 'user': user}
-    send_mail_template(u'Email address changed',
+    send_mail_template(settings.EMAIL_SUBJECT_EMAIL_CHANGED,
                        'accounts/email_reset_complete_old_address_notification.txt', tvars, email_to=old_email)
 
     return render(request, 'accounts/email_reset_complete.html', tvars)
@@ -1232,8 +1221,8 @@ def flag_user(request, username):
                      'objects_data': objects_data,
                      'user_url': user_url,
                      'clear_url': clear_url}
-            send_mail_template_to_support(u'Spam/offensive report for user ' + flagged_user.username, template_to_use,
-                                          tvars)
+            send_mail_template_to_support(
+                settings.EMAIL_SUBJECT_USER_SPAM_REPORT, template_to_use, tvars, extra_subject=flagged_user.username)
         return HttpResponse(json.dumps({"errors": None}), content_type='application/javascript')
     else:
         return HttpResponse(json.dumps({"errors": True}), content_type='application/javascript')
