@@ -2,6 +2,9 @@ var sound = "https://freesound.org" + document.getElementById("waveform").getAtt
 var wavesurfer = createWavesurfer(sound);
 var pitchShifter;
 
+var zoomValue = 0
+var zoomRatio = 5
+
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 
 document.body.onkeyup = function(event) {
@@ -58,8 +61,15 @@ var appliedFilters = []
 
 // Initialization functions 
 function initQuerySelectors() {
-    document.querySelector('#slider').oninput = function () {
-        wavesurfer.zoom(Number(this.value));
+    document.querySelector('#zoom_in').onclick = function () {
+        zoomValue += zoomRatio
+        wavesurfer.zoom(zoomValue);
+    }
+    document.querySelector('#zoom_out').onclick = function () {
+        if (zoomValue > 0) {
+            zoomValue -= zoomRatio
+            wavesurfer.zoom(zoomValue);
+        }
     }
     document.querySelector('#get_selection_btn').onclick = function () {
         toUndo('buffer', wavesurfer.backend.buffer);
@@ -181,8 +191,6 @@ function createWavesurfer(song) {
         progressColor: '#b36d04',
         cursorColor: '#FFFFFF',
         backgroundColor: '#111212',
-        barWidth: 3,
-        barRadius: 3,
         cursorWidth: 1,
         height: 200,
         plugins: [
