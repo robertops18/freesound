@@ -80,9 +80,11 @@ function initQuerySelectors() {
         toUndo('buffer', wavesurfer.backend.buffer);
         getOriginalSample(sound);
     }
+    /*
     document.querySelector('#reset_filters').onclick = function () {
         resetFilters();
     }
+    */
     document.querySelector('#delete_region').onclick = function () {
         toUndo('buffer', wavesurfer.backend.buffer);
         deleteRegion();
@@ -118,6 +120,11 @@ function initQuerySelectors() {
     }
     document.querySelector('#bitcrush').onclick = function () {
         applyBitcrushEffect(bitcrush_knob.getValue());
+    }
+    document.querySelector('#change_rate_btn').onclick = function () {
+        var rateValue = Number($("input[name='rateRadios']:checked").val());
+        print(rateValue);
+        wavesurfer.setPlaybackRate(rateValue)
     }
     /*
     document.querySelector('#init_pitch_shifter').onclick = function () {

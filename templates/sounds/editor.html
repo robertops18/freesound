@@ -44,8 +44,8 @@
     <div id="single_sample_header" class="{% if is_explicit %}blur{% endif %}">
         {% if sound.pack %}<a href="{% url 'pack' username sound.pack.id %}">{{sound.pack.name}}</a>  &#187; {% endif %}<a href="#">{{sound.original_filename}}</a>
     </div>
-    <div class="row pl-2" style="align-items: baseline;">
-        <div class="border rounded m-2" id="play_pause">
+    <div class="row pl-3" style="align-items: baseline;">
+        <div class="border rounded m-1" id="play_pause">
                 <button class="btn btn-primary m-1" onclick="wavesurfer.skipBackward()" data-toggle="tooltip" data-placement="bottom" title="Back 2 seconds">
                     <i class="fa fa-step-backward"></i>
                 </button>
@@ -54,11 +54,14 @@
                     /
                     <i class="fas fa-pause" ></i>
                 </button>
+                <button class="btn btn-primary m-1" onclick="wavesurfer.stop()" data-toggle="tooltip" data-placement="bottom" title="Stop">
+                    <i class="fa fa-stop"></i>
+                </button>
                 <button class="btn btn-primary m-1" onclick="wavesurfer.skipForward()" data-toggle="tooltip" data-placement="bottom" title="Advance 2 seconds">
                     <i class="fa fa-step-forward"></i>
                 </button>
             </div>
-        <div class="border rounded m-2" id="undo_redo">
+        <div class="border rounded m-1" id="undo_redo">
             <div class="tooltip-wrapper" data-toggle="tooltip" data-placement="bottom" title="Undo" style="display: inline-block;">
                 <button class="btn btn-success m-1" id="undo" disabled style="pointer-events: none;">
                     <i class="fa fa-undo"></i>
@@ -86,7 +89,7 @@
                 <i class="fa fa-search-minus"></i>
             </button>
         </div>
-        <div class="border rounded m-2" id="actions">
+        <div class="border rounded m-1" id="actions">
             <div class="tooltip-wrapper" data-toggle="tooltip" data-placement="bottom" title="Get selected region" style="display: inline-block;">
                 <button class="btn btn-success m-1" id="get_selection_btn" disabled style="pointer-events: none;">
                     <i class="fa fa-search"></i>
@@ -95,12 +98,19 @@
             <button class="btn btn-success m-1" id="undo_get_selection_btn" data-toggle="tooltip" data-placement="bottom" title="Get original sample">
                 <i class="fa fa-file-audio"></i>
             </button>
+            <div class="tooltip-wrapper" data-toggle="tooltip" data-placement="bottom" title="Change playback rate" style="display: inline-block;">
+                <button class="btn btn-success m-1" id="playback_rate_btn" data-toggle="modal" data-target="#playbackRateModal">
+                    <i class="fa fa-tachometer-alt"></i>
+                </button>
+            </div>
             <button class="btn btn-success m-1" id="reverse" data-toggle="tooltip" data-placement="bottom" title="Reverse">
                 <i class="fa fa-history"></i>
             </button>
+            <!--
             <button class="btn btn-success m-1" id="reset_filters" data-toggle="tooltip" data-placement="bottom" title="Reset filters">
                 <i class="fa fa-filter"></i>
             </button>
+            -->
             <button class="btn btn-success m-1" id="export" data-toggle="tooltip" data-placement="bottom" title="Download edited sample">
                 <i class="fa fa-download"></i>
             </button>
@@ -216,6 +226,42 @@
                     </div>
                 </div>
             </div>
+        <div class="modal fade" id="playbackRateModal" tabindex="-1" role="dialog" aria-labelledby="playbackRateModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="playbackRateModalLabel">Change playback rate</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="rateRadios" id="halfRatio" value="0.5" checked>
+                    <label class="form-check-label ratio-option" for="halfRatio">
+                    0.5
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="rateRadios" id="normalRatio" value="1">
+                    <label class="form-check-label ratio-option" for="normalRatio">
+                    1
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="rateRadios" id="doubleRatio" value="2">
+                    <label class="form-check-label ratio-option" for="doubleRatio">
+                    2
+                    </label>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="change_rate_btn" data-dismiss="modal">Change rate</button>
+              </div>
+            </div>
+          </div>
+        </div>
     </div>
 
     <div id="waveform" sound_url="{{ sound.locations.preview.LQ.mp3.url }}" sound_name="{{ sound.original_filename }}" sound_id="{{ sound_id }}" username="{{ username }}"></div>
