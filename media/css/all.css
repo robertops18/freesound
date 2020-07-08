@@ -1250,6 +1250,14 @@ ul.tags {
     background: url(../images/download_button.png);
 }
 
+#edit_button {
+    display: block;
+    float: right;
+    width: 144px;
+    height: 31px;
+    background: url(../images/edit_sound.png);
+}
+
 #download_login_button {
     display: block;
     float: right;
