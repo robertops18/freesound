@@ -29,21 +29,22 @@ initQuerySelectors();
 // Wavesurfer events
 initWavesurferEvents();
 
-// Knobs filters
-var lowpass_knob = createKnob("lowpass_knob", 0, 500, 'Hz');
-var highpass_knob = createKnob("highpass_knob", 0, 500, 'Hz');
-var bandpass_knob = createKnob("bandpass_knob", 0, 500, 'Hz');
-var lowshelf_knob = createKnob("lowshelf_knob", 0, 500, 'Hz');
-var highshelf_knob = createKnob("highshelf_knob", 0, 500, 'Hz');
-var peaking_knob = createKnob("peaking_knob", 0, 500, 'Hz');
-var notch_knob = createKnob("notch_knob", 0, 500, 'Hz');
-var allpass_knob = createKnob("allpass_knob", 0, 500, 'Hz');
-
 //Knobs effects
 var amplify_knob = createKnob("amplify_knob", 1, 5,'', 1);
 var fade_in_knob = createKnob("fade_in_knob", 1, 10, 'Seconds', 1);
 var fade_out_knob = createKnob("fade_out_knob", 1, 10, 'Seconds', 1);
 var bitcrush_knob = createKnob("bitcrush_knob", 4, 16, 'Bits',4);
+
+//Effects knob
+var filters_knob = createKnob('filters_knob', 0, 500, 'Hz');
+var changeListener = function(knob, value) {
+    var filterType = $( "#filter_select" ).val();
+    if (filterType !== 'Select one filter...' && value !== 0) {
+        toUndo('filter', {filterType: filterType, frequency: filters_knob.getValue()});
+        applyFilter(filterType, value);
+    }
+}
+filters_knob.addListener(changeListener);
 
 /*
 // Pitch slider
@@ -80,11 +81,9 @@ function initQuerySelectors() {
         toUndo('buffer', wavesurfer.backend.buffer);
         getOriginalSample(sound);
     }
-    /*
     document.querySelector('#reset_filters').onclick = function () {
         resetFilters();
     }
-    */
     document.querySelector('#delete_region').onclick = function () {
         toUndo('buffer', wavesurfer.backend.buffer);
         deleteRegion();
@@ -131,43 +130,6 @@ function initQuerySelectors() {
         initPitchShifter();
     }
      */
-    
-    querySelectorFilters();
-}
-
-function querySelectorFilters() {
-    document.querySelector('#lowpass_filter_btn').onclick = function () {
-        toUndo('filter', {filterType: 'lowpass', frequency: lowpass_knob.getValue()});
-		applyFilter('lowpass', lowpass_knob.getValue());
-	}
-	document.querySelector('#highpass_filter_btn').onclick = function () {
-        toUndo('filter', {filterType: 'highpass', frequency: highpass_knob.getValue()});
-		applyFilter('highpass', highpass_knob.getValue());
-	}
-	document.querySelector('#bandpass_filter_btn').onclick = function () {
-        toUndo('filter', {filterType: 'bandpass', frequency: bandpass_knob.getValue()});
-		applyFilter('bandpass', bandpass_knob.getValue());
-	}
-	document.querySelector('#lowshelf_filter_btn').onclick = function () {
-        toUndo('filter', {filterType: 'lowshelf', frequency: lowshelf_knob.getValue()});
-		applyFilter('lowshelf', lowshelf_knob.getValue());
-	}
-	document.querySelector('#highshelf_filter_btn').onclick = function () {
-        toUndo('filter', {filterType: 'highshelf', frequency: highshelf_knob.getValue()});
-		applyFilter('highshelf', highshelf_knob.getValue());
-	}
-	document.querySelector('#peaking_filter_btn').onclick = function () {
-        toUndo('filter', {filterType: 'peaking', frequency: peaking_knob.getValue()});
-		applyFilter('peaking', peaking_knob.getValue());
-	}
-	document.querySelector('#notch_filter_btn').onclick = function () {
-        toUndo('filter', {filterType: 'notch', frequency: notch_knob.getValue()});
-		applyFilter('notch', notch_knob.getValue());
-	}
-	document.querySelector('#allpass_filter_btn').onclick = function () {
-        toUndo('filter', {filterType: 'allpass', frequency: allpass_knob.getValue()});
-		applyFilter('allpass', allpass_knob.getValue());
-	}
 }
 
 function initWavesurferEvents() {
@@ -647,17 +609,7 @@ function cancelFilter() {
 }
 
 function resetFilters() {
-	lowpass_knob.setValue(0);
-	highpass_knob.setValue(0);
-	bandpass_knob.setValue(0);
-	lowshelf_knob.setValue(0);
-	highshelf_knob.setValue(0);
-	peaking_knob.setValue(0);
-	notch_knob.setValue(0);
-    allpass_knob.setValue(0);
-
-    amplify_knob.setValue(1);
-    
+	filters_knob.setValue(0);
     applyFilter('allpass', 0);
     amplify(1);
 }
