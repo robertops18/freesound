@@ -296,61 +296,23 @@
                 </div>
             </div>
         </div>
-        <div class="border rounded m-1 col-sm" id="filters_pannel">
-
-        </div>
-    </div>
-
-    <div id="accordion3">
-        <div class="card m-2">
-            <div class="card-header" id="headingThree" data-toggle="collapse" data-target="#collapseEffects" aria-expanded="true" aria-controls="collapseEffects">
-                <h5 class="mb-0">
-                    Effects
-                    <i class="fas fa-caret-down"></i>
-                </h5>
+        <div class="border rounded m-1 col-sm" id="effects_pannel">
+            <div class="row">
+                <h2 class="pt-2 pl-3">Effects</h2>
             </div>
-            <div id="collapseEffects" class="collapse" aria-labelledby="headingThree" data-parent="#accordion3">
-                <div class="container">
-                    <div class="row mt-2 mb-2">
-                        <div class="col-3 text-center">
-                            <div class="m-1" id="amplify_knob"></div>
-                        </div>
-                        <div class="col-3 text-center">
-                            <div class="m-1" id="fade_in_knob"></div>
-                        </div>
-                        <div class="col-3 text-center">
-                            <div class="m-1" id="fade_out_knob"></div>
-                        </div>
-                        <div class="col-3 text-center">
-                            <div class="m-1" id="bitcrush_knob"></div>
-                        </div>
-
-                        <div class="w-100"></div>
-
-                        <div class="col-3 text-center">
-                            <button class="btn btn-primary btn-sm filter-buttons m-1" id="amplify_btn">Amplify</button>
-                        </div>
-                        <div class="col-3 text-center">
-                            <button class="btn btn-primary btn-sm filter-buttons m-1" id="fade_in">Fade in</button>
-                        </div>
-                        <div class="col-3 text-center">
-                            <button class="btn btn-primary btn-sm filter-buttons m-1" id="fade_out">Fade out</button>
-                        </div>
-                        <div class="col-3 text-center">
-                            <button class="btn btn-primary btn-sm filter-buttons m-1" id="bitcrush">Bitcrush effect</button>
-                        </div>
-<!--
-                        <div class="w-100"></div>
-
-                        <div class="col-12 text-center">
-                            <button class="btn btn-success m-1" id="init_pitch_shifter">Init Pitch Shifter</button>
-                        </div>
-                        <div class="col-12 text-center">
-                            <input type="range" autofocus="true" min="0.1" max="2.0" name="pitchSlider" value="1.0" id="pitchSlider" step="0.01" list="pitchrange">
-                        </div>
--->
-
+            <div class="row">
+                <div class="col-sm text-center align-self-center pl-5">
+                    <div class="row pb-2 justify-content-center">
+                        <select class="custom-select" id="effects_select" onchange="chooseKnobConfig(value)">
+                            <option selected>Select one effect...</option>
+                            <option value="amplify">Amplify</option>
+                            <option value="fadein">Fade in</option>
+                            <option value="fadeout">Fade out</option>
+                        </select>
                     </div>
+                </div>
+                <div class="col-sm text-center">
+                    <div id="effects_knob"></div>
                 </div>
             </div>
         </div>

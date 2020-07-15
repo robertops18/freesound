@@ -29,22 +29,25 @@ initQuerySelectors();
 // Wavesurfer events
 initWavesurferEvents();
 
-//Knobs effects
-var amplify_knob = createKnob("amplify_knob", 1, 5,'', 1);
-var fade_in_knob = createKnob("fade_in_knob", 1, 10, 'Seconds', 1);
-var fade_out_knob = createKnob("fade_out_knob", 1, 10, 'Seconds', 1);
-var bitcrush_knob = createKnob("bitcrush_knob", 4, 16, 'Bits',4);
-
-//Effects knob
+//Filters and effects knob
 var filters_knob = createKnob('filters_knob', 0, 500, 'Hz');
-var changeListener = function(knob, value) {
+var changeListenerFilters = function(knob, value) {
     var filterType = $( "#filter_select" ).val();
     if (filterType !== 'Select one filter...' && value !== 0) {
         toUndo('filter', {filterType: filterType, frequency: filters_knob.getValue()});
         applyFilter(filterType, value);
     }
 }
-filters_knob.addListener(changeListener);
+filters_knob.addListener(changeListenerFilters);
+
+var effects_knob = createKnob('effects_knob', 0, 5, '');
+var changeListenerEffects = function(knob, value) {
+    var effect = $( "#effects_select" ).val();
+    if (effect !== 'Select one effect...' && value !== 0) {
+        applyEffect(effect, value);
+    }
+}
+effects_knob.addListener(changeListenerEffects);
 
 /*
 // Pitch slider
@@ -96,15 +99,6 @@ function initQuerySelectors() {
         toUndo('buffer', wavesurfer.backend.buffer);
         reverse();
     }
-    document.querySelector('#fade_in').onclick = function () {
-        fadeIn(fade_in_knob.getValue());
-    }
-    document.querySelector('#fade_out').onclick = function () {
-        fadeOut(fade_out_knob.getValue());
-    }
-    document.querySelector('#amplify_btn').onclick = function () {
-        amplify(amplify_knob.getValue());
-    }
     document.querySelector('#export').onclick = function () {
         exportBufferToFile();
     }
@@ -117,12 +111,8 @@ function initQuerySelectors() {
     document.querySelector('#redo').onclick = function () {
         redo();
     }
-    document.querySelector('#bitcrush').onclick = function () {
-        applyBitcrushEffect(bitcrush_knob.getValue());
-    }
     document.querySelector('#change_rate_btn').onclick = function () {
         var rateValue = Number($("input[name='rateRadios']:checked").val());
-        print(rateValue);
         wavesurfer.setPlaybackRate(rateValue)
     }
     /*
@@ -588,6 +578,22 @@ function applyFilter(filterType, frequency, fromCancel = false) {
     }
 }
 
+function applyEffect(effect, value) {
+    switch (effect) {
+        case 'amplify':
+            amplify(value);
+            break;
+        case 'fadein':
+            fadeIn(value);
+            break;
+        case 'fadeout':
+            fadeOut(value);
+            break;
+        default:
+            break;
+    }
+}
+
 function createKnob(divID, valMin, valMax, label, defaultValue = 0) {
 	var myKnob = pureknob.createKnob(134, 134);
 	myKnob.setProperty('valMin', valMin);
@@ -604,6 +610,30 @@ function createKnob(divID, valMin, valMax, label, defaultValue = 0) {
 	return myKnob;
 }
 
+function changeKnobValues(knob, valMin, valMax, label, defaultValue) {
+    knob.setProperty('valMin', valMin);
+    knob.setProperty('valMax', valMax);
+    knob.setProperty('label', label);
+    knob.setProperty('val', defaultValue);
+}
+
+function chooseKnobConfig(value) {
+    switch (value) {
+        case 'amplify':
+            changeKnobValues(effects_knob, 1, 5, '', 1);
+            effects_knob.setValue(wavesurfer.backend.gainNode.gain.value);
+            break;
+        case 'fadein':
+            changeKnobValues(effects_knob, 1, 10, 'Seconds', 1);
+            break;
+        case 'fadeout':
+            changeKnobValues(effects_knob, 1, 10, 'Seconds', 1);
+            break;
+        default:
+            break;
+    }
+}
+
 function cancelFilter() {
     applyFilter('allpass', 0, true);
 }
@@ -611,15 +641,6 @@ function cancelFilter() {
 function resetFilters() {
 	filters_knob.setValue(0);
     applyFilter('allpass', 0);
-    amplify(1);
-}
-
-// Bitcrush effect
-
-function applyBitcrushEffect(bits) {
-    var bitcrushNode = getBitCrushNode(wavesurfer.backend.ac, bits);
-    wavesurfer.backend.source.connect(bitcrushNode);
-    bitcrushNode.connect(wavesurfer.backend.ac.destination);
 }
 
 // Key events
