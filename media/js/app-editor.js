@@ -30,24 +30,12 @@ initQuerySelectors();
 initWavesurferEvents();
 
 //Filters and effects knob
-var filters_knob = createKnob('filters_knob', 0, 500, 'Hz');
-var changeListenerFilters = function(knob, value) {
-    var filterType = $( "#filter_select" ).val();
-    if (filterType !== 'Select one filter...' && value !== 0) {
-        toUndo('filter', {filterType: filterType, frequency: filters_knob.getValue()});
-        applyFilter(filterType, value);
-    }
-}
-filters_knob.addListener(changeListenerFilters);
+var lowpass_knob = createKnob('lowpass_knob', 0, 500, 'Hz');
+var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 500, 'Hz');
+var bandpass_q_knob = createKnob('bandpass_q_knob', 1, 1000, 'Q', 1);
+var highpass_knob = createKnob('highpass_knob', 0, 500, 'Hz');
 
-var effects_knob = createKnob('effects_knob', 0, 5, '');
-var changeListenerEffects = function(knob, value) {
-    var effect = $( "#effects_select" ).val();
-    if (effect !== 'Select one effect...' && value !== 0) {
-        applyEffect(effect, value);
-    }
-}
-effects_knob.addListener(changeListenerEffects);
+initKnobListeners();
 
 /*
 // Pitch slider
@@ -84,9 +72,12 @@ function initQuerySelectors() {
         toUndo('buffer', wavesurfer.backend.buffer);
         getOriginalSample(sound);
     }
+    /*
     document.querySelector('#reset_filters').onclick = function () {
         resetFilters();
     }
+
+     */
     document.querySelector('#delete_region').onclick = function () {
         toUndo('buffer', wavesurfer.backend.buffer);
         deleteRegion();
@@ -149,6 +140,48 @@ function initWavesurferEvents() {
 	 */
 }
 
+function initKnobListeners() {
+    var changeListenerLowpass = function(knob, value) {
+        if (value !== 0) {
+            toUndo('filter', {filterType: 'lowpass', frequency: value, Q: 1, tooltipTextUndo: 'Undo Lowpass filter', tooltipTextRedo: 'Redo Lowpass filter'});
+            applyFilter('lowpass', value, 1);
+        }
+    }
+    lowpass_knob.addListener(changeListenerLowpass);
+
+    var changeListenerHighpass = function(knob, value) {
+        if (value !== 0) {
+            toUndo('filter', {filterType: 'highpass', frequency: value, Q: 1, tooltipTextUndo: 'Undo Highpass filter', tooltipTextRedo: 'Redo Highpass filter'});
+            applyFilter('highpass', value, 1);
+        }
+    }
+    highpass_knob.addListener(changeListenerHighpass);
+
+    var changeListenerBandpassFreq = function(knob, value) {
+        if (value !== 0) {
+            toUndo('filter', {filterType: 'bandpass', frequency: value, Q: bandpass_q_knob.getValue(), tooltipText: 'Undo Bandpass filter', tooltipTextRedo: 'Redo Bandpass filter'});
+            applyFilter('highpass', value, bandpass_q_knob.getValue());
+        }
+    }
+    bandpass_freq_knob.addListener(changeListenerBandpassFreq);
+
+    var changeListenerBandpassQ = function(knob, value) {
+        toUndo('filter', {filterType: 'bandpass', frequency: bandpass_freq_knob.getValue(), Q: value, tooltipText: 'Undo Bandpass filter', tooltipTextRedo: 'Redo Bandpass filter'});
+        applyFilter('highpass', bandpass_freq_knob.getValue(), value);
+    }
+    bandpass_q_knob.addListener(changeListenerBandpassQ);
+
+
+    var effects_knob = createKnob('effects_knob', 0, 5, '');
+    var changeListenerEffects = function(knob, value) {
+        var effect = $( "#effects_select" ).val();
+        if (effect !== 'Select one effect...' && value !== 0) {
+            applyEffect(effect, value);
+        }
+    }
+    effects_knob.addListener(changeListenerEffects);
+}
+
 function createWavesurfer(song) {
     var wavesurfer = WaveSurfer.create({
         container: '#waveform',
@@ -204,6 +237,11 @@ function undo() {
     if (undoArray.length > 0) {
         var undoAction = undoArray.pop();
         document.querySelector('#undo').disabled = undoArray.length === 0;
+        if (undoArray.length === 0) {
+            $('#undo_tooltip').tooltip().attr('data-original-title', 'Undo');
+        } else {
+            $('#undo_tooltip').tooltip().attr('data-original-title', undoArray[undoArray.length - 1].action.tooltipTextUndo);
+        }
         switch (undoAction.type) {
             case 'buffer':
                 toRedo('buffer', wavesurfer.backend.buffer);
@@ -218,7 +256,7 @@ function undo() {
                 // 2. Cancel its behaviour or apply previous one
                 if (appliedFilters.length > 0) {
                     var lastFilter = appliedFilters[appliedFilters.length - 1]
-                    applyFilter(lastFilter.filterType, lastFilter.frequency, true);
+                    applyFilter(lastFilter.filterType, lastFilter.frequency, lastFilter.Q, true);
                 } else {
                     cancelFilter()
                 }
@@ -233,6 +271,11 @@ function redo() {
     if (redoArray.length > 0) {
         var redoAction = redoArray.pop();
         document.querySelector('#redo').disabled = redoArray.length === 0;
+        if (redoArray.length === 0) {
+            $('#redo_tooltip').tooltip().attr('data-original-title', 'Redo');
+        } else {
+            $('#redo_tooltip').tooltip().attr('data-original-title', redoArray[redoArray.length - 1].action.tooltipTextRedo);
+        }
         switch (redoAction.type) {
             case 'buffer':
                 toUndo('buffer', wavesurfer.backend.buffer);
@@ -243,7 +286,7 @@ function redo() {
             case 'filter': // TODO: Redo functions with filters
                 toUndo('filter', redoAction.action);
                 // Apply filter
-                applyFilter(redoAction.action.filterType, redoAction.action.frequency);
+                applyFilter(redoAction.action.filterType, redoAction.action.frequency, redoAction.action.Q);
                 break;
         }
     } else {
@@ -259,6 +302,7 @@ function toUndo(type, action) {
     undoArray.push(undoAction);
     document.querySelector('#undo').disabled = undoArray.length === 0;
     document.querySelector('#undo').style.pointerEvents = undoArray.length === 0 ? 'none' : 'auto';
+    $('#undo_tooltip').tooltip().attr('data-original-title', action.tooltipTextUndo);
 }
 
 function toRedo(type, action) {
@@ -269,6 +313,7 @@ function toRedo(type, action) {
     redoArray.push(redoAction);
     document.querySelector('#redo').disabled = redoArray.length === 0;
     document.querySelector('#redo').style.pointerEvents = redoArray.length === 0 ? 'none' : 'auto';
+    $('#redo_tooltip').tooltip().attr('data-original-title', action.tooltipTextRedo);
 }
 
 // Buffer related functions
@@ -564,16 +609,18 @@ function numOfRegions() {
 }
 
 // Filter related functions
-function applyFilter(filterType, frequency, fromCancel = false) {
+function applyFilter(filterType, frequency, Q, fromCancel = false) {
 	var filter = wavesurfer.backend.ac.createBiquadFilter();
 	filter.type = filterType;
 	filter.frequency.value = frequency;
+	filter.Q.value = Q;
 	wavesurfer.backend.setFilter(filter);
 
 	if (!fromCancel) {
 	    appliedFilters.push({
             filterType: filterType,
-            frequency: frequency
+            frequency: frequency,
+            Q: Q
         });
     }
 }
@@ -595,7 +642,7 @@ function applyEffect(effect, value) {
 }
 
 function createKnob(divID, valMin, valMax, label, defaultValue = 0) {
-	var myKnob = pureknob.createKnob(134, 134);
+	var myKnob = pureknob.createKnob(80, 80);
 	myKnob.setProperty('valMin', valMin);
 	myKnob.setProperty('valMax', valMax);
     myKnob.setProperty('colorFG', '#0A61FE');
@@ -635,12 +682,12 @@ function chooseKnobConfig(value) {
 }
 
 function cancelFilter() {
-    applyFilter('allpass', 0, true);
+    applyFilter('allpass', 0, 1,true);
 }
 
 function resetFilters() {
 	filters_knob.setValue(0);
-    applyFilter('allpass', 0);
+    applyFilter('allpass', 0, 1);
 }
 
 // Key events
