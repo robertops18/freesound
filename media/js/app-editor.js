@@ -65,11 +65,11 @@ function initQuerySelectors() {
         }
     }
     document.querySelector('#get_selection_btn').onclick = function () {
-        toUndo('buffer', wavesurfer.backend.buffer);
+        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Get Selected Region', tooltipTextRedo: 'Redo Get Selected Region'});
         getSelectedRegion();
     }
     document.querySelector('#undo_get_selection_btn').onclick = function () {
-        toUndo('buffer', wavesurfer.backend.buffer);
+        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Get Original Sample', tooltipTextRedo: 'Redo Get Original Sample'});
         getOriginalSample(sound);
     }
     /*
@@ -79,15 +79,15 @@ function initQuerySelectors() {
 
      */
     document.querySelector('#delete_region').onclick = function () {
-        toUndo('buffer', wavesurfer.backend.buffer);
+        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Delete Region', tooltipTextRedo: 'Redo Delete Region'});
         deleteRegion();
     }
     document.querySelector('#empty_region').onclick = function () {
-        toUndo('buffer', wavesurfer.backend.buffer);
+        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Clear Region', tooltipTextRedo: 'Redo Clear Region'});
         emptyRegion();
     }
     document.querySelector('#reverse').onclick = function () {
-        toUndo('buffer', wavesurfer.backend.buffer);
+        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Reverse', tooltipTextRedo: 'Redo Reverse'});
         reverse();
     }
     document.querySelector('#export').onclick = function () {
@@ -244,8 +244,8 @@ function undo() {
         }
         switch (undoAction.type) {
             case 'buffer':
-                toRedo('buffer', wavesurfer.backend.buffer);
-                var previousBuffer = undoAction.action;
+                toRedo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: undoAction.action.tooltipTextUndo, tooltipTextRedo: undoAction.action.tooltipTextRedo});
+                var previousBuffer = undoAction.action.buffer;
                 wavesurfer.empty()
                 wavesurfer.loadDecodedBuffer(previousBuffer);
                 break;
@@ -278,8 +278,8 @@ function redo() {
         }
         switch (redoAction.type) {
             case 'buffer':
-                toUndo('buffer', wavesurfer.backend.buffer);
-                var previousBuffer = redoAction.action;
+                toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: redoAction.action.tooltipTextUndo, tooltipTextRedo: redoAction.action.tooltipTextRedo});
+                var previousBuffer = redoAction.action.buffer;
                 wavesurfer.empty()
                 wavesurfer.loadDecodedBuffer(previousBuffer);
                 break;
