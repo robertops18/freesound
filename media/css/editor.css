@@ -24,3 +24,7 @@
     background-color: #AB4646 !important;
     border-color: #AB4646 !important;
 }
+
+.knob-name {
+    font-size: 1rem !important;
+}

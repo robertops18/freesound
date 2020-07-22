@@ -35,6 +35,11 @@ var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 500, 'Hz');
 var bandpass_q_knob = createKnob('bandpass_q_knob', 1, 1000, 'Q', 1);
 var highpass_knob = createKnob('highpass_knob', 0, 500, 'Hz');
 
+var amplify_knob = createKnob('amplify_knob', 1, 5, '', 1);
+var fade_in_knob = createKnob('fade_in_knob', 0, 10, 'In (s)');
+var fade_out_knob = createKnob('fade_out_knob', 0, 10, 'Out (s)');
+var rate_knob = createKnob('rate_knob', 0.2, 3, '', 1);
+
 initKnobListeners();
 
 /*
@@ -102,10 +107,6 @@ function initQuerySelectors() {
     document.querySelector('#redo').onclick = function () {
         redo();
     }
-    document.querySelector('#change_rate_btn').onclick = function () {
-        var rateValue = Number($("input[name='rateRadios']:checked").val());
-        wavesurfer.setPlaybackRate(rateValue)
-    }
     /*
     document.querySelector('#init_pitch_shifter').onclick = function () {
         initPitchShifter();
@@ -141,45 +142,99 @@ function initWavesurferEvents() {
 }
 
 function initKnobListeners() {
-    var changeListenerLowpass = function(knob, value) {
+    var changeListenerLowpass = function(knob, value, mouseUp) {
         if (value !== 0) {
-            toUndo('filter', {filterType: 'lowpass', frequency: value, Q: 1, tooltipTextUndo: 'Undo Lowpass filter', tooltipTextRedo: 'Redo Lowpass filter'});
+            if (mouseUp) {
+                toUndo('filter', {
+                    filterType: 'lowpass',
+                    frequency: value,
+                    Q: 1,
+                    tooltipTextUndo: 'Undo Lowpass filter',
+                    tooltipTextRedo: 'Redo Lowpass filter'
+                });
+            }
             applyFilter('lowpass', value, 1);
         }
     }
     lowpass_knob.addListener(changeListenerLowpass);
 
-    var changeListenerHighpass = function(knob, value) {
+    var changeListenerHighpass = function(knob, value, mouseUp) {
         if (value !== 0) {
-            toUndo('filter', {filterType: 'highpass', frequency: value, Q: 1, tooltipTextUndo: 'Undo Highpass filter', tooltipTextRedo: 'Redo Highpass filter'});
+            if (mouseUp) {
+                toUndo('filter', {
+                    filterType: 'highpass',
+                    frequency: value,
+                    Q: 1,
+                    tooltipTextUndo: 'Undo Highpass filter',
+                    tooltipTextRedo: 'Redo Highpass filter'
+                });
+            }
             applyFilter('highpass', value, 1);
         }
     }
     highpass_knob.addListener(changeListenerHighpass);
 
-    var changeListenerBandpassFreq = function(knob, value) {
+    var changeListenerBandpassFreq = function(knob, value, mouseUp) {
         if (value !== 0) {
-            toUndo('filter', {filterType: 'bandpass', frequency: value, Q: bandpass_q_knob.getValue(), tooltipText: 'Undo Bandpass filter Freq', tooltipTextRedo: 'Redo Bandpass filter Freq'});
+            if (mouseUp) {
+                toUndo('filter', {
+                    filterType: 'bandpass',
+                    frequency: value,
+                    Q: bandpass_q_knob.getValue(),
+                    tooltipTextUndo: 'Undo Bandpass filter Freq',
+                    tooltipTextRedo: 'Redo Bandpass filter Freq'
+                });
+            }
             applyFilter('highpass', value, bandpass_q_knob.getValue());
         }
     }
     bandpass_freq_knob.addListener(changeListenerBandpassFreq);
 
-    var changeListenerBandpassQ = function(knob, value) {
-        toUndo('filter', {filterType: 'bandpass', frequency: bandpass_freq_knob.getValue(), Q: value, tooltipText: 'Undo Bandpass filter Q', tooltipTextRedo: 'Redo Bandpass filter Q'});
+    var changeListenerBandpassQ = function(knob, value, mouseUp) {
+        if (mouseUp) {
+            toUndo('filter', {
+                filterType: 'bandpass',
+                frequency: bandpass_freq_knob.getValue(),
+                Q: value,
+                tooltipTextUndo: 'Undo Bandpass filter Q',
+                tooltipTextRedo: 'Redo Bandpass filter Q'
+            });
+        }
         applyFilter('highpass', bandpass_freq_knob.getValue(), value);
     }
     bandpass_q_knob.addListener(changeListenerBandpassQ);
 
-
-    var effects_knob = createKnob('effects_knob', 0, 5, '');
-    var changeListenerEffects = function(knob, value) {
-        var effect = $( "#effects_select" ).val();
-        if (effect !== 'Select one effect...' && value !== 0) {
-            applyEffect(effect, value);
+    var changeListenerAmplify = function(knob, value, mouseUp) {
+        if (mouseUp) {
+            //TODO: Undo and redo amplify
         }
+        amplify(value);
     }
-    effects_knob.addListener(changeListenerEffects);
+    amplify_knob.addListener(changeListenerAmplify);
+
+    var changeListenerFadeIn = function(knob, value, mouseUp) {
+        if (mouseUp) {
+            //TODO: Undo and redo fadein
+        }
+        fadeIn(value);
+    }
+    fade_in_knob.addListener(changeListenerFadeIn);
+
+    var changeListenerFadeOut = function(knob, value, mouseUp) {
+        if (mouseUp) {
+            //TODO: Undo and redo fadeout
+        }
+        fadeOut(value);
+    }
+    fade_out_knob.addListener(changeListenerFadeOut);
+
+    var changeListenerPlaybackRate = function(knob, value, mouseUp) {
+        if (mouseUp) {
+            //TODO: Undo and redo playback rate
+        }
+        wavesurfer.setPlaybackRate(value)
+    }
+    rate_knob.addListener(changeListenerPlaybackRate);
 }
 
 function createWavesurfer(song) {
