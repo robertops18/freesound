@@ -767,7 +767,7 @@ function keyDown(event) {
     switch (event.keyCode) {
         case 8: // delete
             if (numOfRegions() > 0) {
-                toUndo('buffer', wavesurfer.backend.buffer);
+                toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Delete Region', tooltipTextRedo: 'Redo Delete Region'});
                 deleteRegion();
             }
             break;
