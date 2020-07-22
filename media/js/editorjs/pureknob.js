@@ -381,6 +381,7 @@ function PureKnob() {
 				'colorBG': '#181818',
 				'colorFG': '#ff8800',
 				'colorLabel': '#ffffff',
+				'decimal': false,
 				'fnStringToValue': function(string) { return parseInt(string); },
 				'fnValueToString': function(value) { return value.toString(); },
 				'label': null,
@@ -585,6 +586,7 @@ function PureKnob() {
 				const properties = this._properties;
 				const valMin = properties.valMin;
 				const valMax = properties.valMax;
+				const decimal = properties.decimal;
 
 				/*
 				 * Clamp the actual value into the [valMin; valMax] range.
@@ -595,7 +597,7 @@ function PureKnob() {
 					value = valMax;
 				}
 
-				value = Math.round(value);
+				value = decimal ? Math.round(value * 10) / 10 : Math.round(value);
 				this.setProperty('val', value);
 			}
 

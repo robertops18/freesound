@@ -30,15 +30,15 @@ initQuerySelectors();
 initWavesurferEvents();
 
 //Filters and effects knob
-var lowpass_knob = createKnob('lowpass_knob', 0, 500, 'Hz');
-var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 500, 'Hz');
-var bandpass_q_knob = createKnob('bandpass_q_knob', 1, 1000, 'Q', 1);
-var highpass_knob = createKnob('highpass_knob', 0, 500, 'Hz');
+var lowpass_knob = createKnob('lowpass_knob', 0, 500, 'Hz', false);
+var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 500, 'Hz', false);
+var bandpass_q_knob = createKnob('bandpass_q_knob', 1, 1000, 'Q', false,1);
+var highpass_knob = createKnob('highpass_knob', 0, 500, 'Hz', false);
 
-var amplify_knob = createKnob('amplify_knob', 1, 5, '', 1);
-var fade_in_knob = createKnob('fade_in_knob', 0, 10, 'In (s)');
-var fade_out_knob = createKnob('fade_out_knob', 0, 10, 'Out (s)');
-var rate_knob = createKnob('rate_knob', 0.2, 3, '', 1);
+var amplify_knob = createKnob('amplify_knob', 1, 5, '', false,1);
+var fade_in_knob = createKnob('fade_in_knob', 0, 10, 'In (s)', false);
+var fade_out_knob = createKnob('fade_out_knob', 0, 10, 'Out (s)', false);
+var rate_knob = createKnob('rate_knob', 0.2, 3, '', true, 1);
 
 initKnobListeners();
 
@@ -696,7 +696,7 @@ function applyEffect(effect, value) {
     }
 }
 
-function createKnob(divID, valMin, valMax, label, defaultValue = 0) {
+function createKnob(divID, valMin, valMax, label, decimal, defaultValue = 0) {
 	var myKnob = pureknob.createKnob(71, 71);
 	myKnob.setProperty('valMin', valMin);
 	myKnob.setProperty('valMax', valMax);
@@ -706,6 +706,7 @@ function createKnob(divID, valMin, valMax, label, defaultValue = 0) {
     myKnob.setProperty('angleEnd', 0.75 * Math.PI);
     myKnob.setProperty('label', label);
     myKnob.setProperty('colorLabel', '#AB4646');
+    myKnob.setProperty('decimal', decimal);
 	var node = myKnob.node();
 	var elem = document.getElementById(divID);
 	elem.appendChild(node);
