@@ -159,14 +159,14 @@ function initKnobListeners() {
 
     var changeListenerBandpassFreq = function(knob, value) {
         if (value !== 0) {
-            toUndo('filter', {filterType: 'bandpass', frequency: value, Q: bandpass_q_knob.getValue(), tooltipText: 'Undo Bandpass filter', tooltipTextRedo: 'Redo Bandpass filter'});
+            toUndo('filter', {filterType: 'bandpass', frequency: value, Q: bandpass_q_knob.getValue(), tooltipText: 'Undo Bandpass filter Freq', tooltipTextRedo: 'Redo Bandpass filter Freq'});
             applyFilter('highpass', value, bandpass_q_knob.getValue());
         }
     }
     bandpass_freq_knob.addListener(changeListenerBandpassFreq);
 
     var changeListenerBandpassQ = function(knob, value) {
-        toUndo('filter', {filterType: 'bandpass', frequency: bandpass_freq_knob.getValue(), Q: value, tooltipText: 'Undo Bandpass filter', tooltipTextRedo: 'Redo Bandpass filter'});
+        toUndo('filter', {filterType: 'bandpass', frequency: bandpass_freq_knob.getValue(), Q: value, tooltipText: 'Undo Bandpass filter Q', tooltipTextRedo: 'Redo Bandpass filter Q'});
         applyFilter('highpass', bandpass_freq_knob.getValue(), value);
     }
     bandpass_q_knob.addListener(changeListenerBandpassQ);
@@ -283,7 +283,7 @@ function redo() {
                 wavesurfer.empty()
                 wavesurfer.loadDecodedBuffer(previousBuffer);
                 break;
-            case 'filter': // TODO: Redo functions with filters
+            case 'filter':
                 toUndo('filter', redoAction.action);
                 // Apply filter
                 applyFilter(redoAction.action.filterType, redoAction.action.frequency, redoAction.action.Q);
@@ -642,15 +642,15 @@ function applyEffect(effect, value) {
 }
 
 function createKnob(divID, valMin, valMax, label, defaultValue = 0) {
-	var myKnob = pureknob.createKnob(80, 80);
+	var myKnob = pureknob.createKnob(71, 71);
 	myKnob.setProperty('valMin', valMin);
 	myKnob.setProperty('valMax', valMax);
-    myKnob.setProperty('colorFG', '#0A61FE');
+    myKnob.setProperty('colorFG', '#AB4646');
     myKnob.setProperty('val', defaultValue);
     myKnob.setProperty('angleStart', -0.75 * Math.PI);
     myKnob.setProperty('angleEnd', 0.75 * Math.PI);
     myKnob.setProperty('label', label);
-    myKnob.setProperty('colorLabel', '#0A61FE');
+    myKnob.setProperty('colorLabel', '#AB4646');
 	var node = myKnob.node();
 	var elem = document.getElementById(divID);
 	elem.appendChild(node);

@@ -20,6 +20,7 @@
     font-size: 15px;
 }
 
-#filters_pannel {
-    height: 270px;
+.freesound-color-btn {
+    background-color: #AB4646 !important;
+    border-color: #AB4646 !important;
 }
