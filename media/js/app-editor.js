@@ -31,9 +31,9 @@ initWavesurferEvents();
 
 //Filters and effects knob
 var lowpass_knob = createKnob('lowpass_knob', 0, 20000, 'Hz', true);
-var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 20000, 'Hz', false);
-var bandpass_q_knob = createKnob('bandpass_q_knob', 1, 30, 'Q', false,1);
-var highpass_knob = createKnob('highpass_knob', 0, 20000, 'Hz', false);
+var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 20000, 'Hz', true);
+var bandpass_q_knob = createKnob('bandpass_q_knob', 1, 30, 'Q', true,1);
+var highpass_knob = createKnob('highpass_knob', 0, 20000, 'Hz', true);
 
 var amplify_knob = createKnob('amplify_knob', -20, 20, 'dB', true, 0);
 var fade_in_knob = createKnob('fade_in_knob', 0, 10, 'In (s)', false);
