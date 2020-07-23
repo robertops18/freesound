@@ -60,14 +60,10 @@ var appliedFilters = []
 // Initialization functions 
 function initQuerySelectors() {
     document.querySelector('#zoom_in').onclick = function () {
-        zoomValue += zoomRatio
-        wavesurfer.zoom(zoomValue);
+        zoomIn();
     }
     document.querySelector('#zoom_out').onclick = function () {
-        if (zoomValue > zoomValueInit) {
-            zoomValue -= zoomRatio
-            wavesurfer.zoom(zoomValue);
-        }
+        zoomOut();
     }
     document.querySelector('#get_selection_btn').onclick = function () {
         toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Get Selected Region', tooltipTextRedo: 'Redo Get Selected Region'});
@@ -289,6 +285,18 @@ function initPitchShifter() {
 
 function playPause() {
     wavesurfer.playPause();
+}
+
+function zoomIn() {
+    zoomValue += zoomRatio
+    wavesurfer.zoom(zoomValue);
+}
+
+function zoomOut() {
+    if (zoomValue > zoomValueInit) {
+        zoomValue -= zoomRatio
+        wavesurfer.zoom(zoomValue);
+    }
 }
 
 // Print aux function
@@ -745,7 +753,7 @@ function keyUp(event) {
 }
 
 function keyDown(event) {
-    //print(event);
+    print(event);
     switch (event.keyCode) {
         case 8: // delete
             if (numOfRegions() > 0) {
@@ -759,6 +767,12 @@ function keyDown(event) {
             } else if ((event.ctrlKey || event.metaKey) && event.shiftKey) {
                 redo();
             }
+            break;
+        case 187:  //+
+            zoomIn();
+            break;
+        case 189: //-
+            zoomOut();
             break;
     }
 }
