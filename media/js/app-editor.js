@@ -138,6 +138,7 @@ function initWavesurferEvents() {
 }
 
 function initKnobListeners() {
+    var lowpassFilter, highpassFilter, bandpassFilterFreq, bandpassFilterQ;
     var changeListenerLowpass = function(knob, value, mouseUp) {
         if (value !== 0) {
             if (mouseUp) {
@@ -150,7 +151,11 @@ function initKnobListeners() {
                 });
                 applyFilter('lowpass', value, 1);
             } else {
-                applyFilter('lowpass', value, 1, true);
+                if (lowpassFilter) {
+                    lowpassFilter.frequency.value = value;
+                } else {
+                    lowpassFilter = applyFilter('lowpass', value, 1, true);
+                }
             }
         }
     }
@@ -168,7 +173,11 @@ function initKnobListeners() {
                 });
                 applyFilter('highpass', value, 1);
             } else {
-                applyFilter('highpass', value, 1, true);
+                if (highpassFilter) {
+                    highpassFilter.frequency.value = value;
+                } else {
+                    highpassFilter = applyFilter('highpass', value, 1, true);
+                }
             }
         }
     }
@@ -186,7 +195,11 @@ function initKnobListeners() {
                 });
                 applyFilter('bandpass', value, bandpass_q_knob.getValue());
             } else {
-                applyFilter('bandpass', value, bandpass_q_knob.getValue(), true);
+                if (bandpassFilterFreq) {
+                    bandpassFilterFreq.frequency.value = value;
+                } else {
+                    bandpassFilterFreq = applyFilter('bandpass', value, bandpass_q_knob.getValue(), true);
+                }
             }
         }
     }
@@ -204,7 +217,11 @@ function initKnobListeners() {
                 });
                 applyFilter('bandpass', bandpass_freq_knob.getValue(), value);
             } else {
-                applyFilter('bandpass', bandpass_freq_knob.getValue(), value, true);
+                if (bandpassFilterQ) {
+                    bandpassFilterQ.Q.value = value;
+                } else {
+                    bandpassFilterQ = applyFilter('bandpass', bandpass_freq_knob.getValue(), value, true);
+                }
             }
         }
     }
@@ -699,6 +716,7 @@ function applyFilter(filterType, frequency, Q, fromCancel = false) {
             Q: Q
         });
     }
+	return filter;
 }
 
 function createKnob(divID, valMin, valMax, label, decimal, defaultValue = 0) {
@@ -753,7 +771,7 @@ function keyUp(event) {
 }
 
 function keyDown(event) {
-    print(event);
+    //print(event);
     switch (event.keyCode) {
         case 8: // delete
             if (numOfRegions() > 0) {
