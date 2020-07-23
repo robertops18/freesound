@@ -4,7 +4,7 @@ var pitchShifter;
 
 var zoomValueInit = 0
 var zoomValue = 0
-var zoomRatio = 5
+var zoomRatio = 10
 
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 
@@ -30,12 +30,12 @@ initQuerySelectors();
 initWavesurferEvents();
 
 //Filters and effects knob
-var lowpass_knob = createKnob('lowpass_knob', 0, 500, 'Hz', false);
-var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 500, 'Hz', false);
+var lowpass_knob = createKnob('lowpass_knob', 0, 20000, 'Hz', true);
+var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 20000, 'Hz', false);
 var bandpass_q_knob = createKnob('bandpass_q_knob', 1, 30, 'Q', false,1);
-var highpass_knob = createKnob('highpass_knob', 0, 500, 'Hz', false);
+var highpass_knob = createKnob('highpass_knob', 0, 20000, 'Hz', false);
 
-var amplify_knob = createKnob('amplify_knob', 1, 5, '', false,1);
+var amplify_knob = createKnob('amplify_knob', -20, 20, 'dB', true, 0);
 var fade_in_knob = createKnob('fade_in_knob', 0, 10, 'In (s)', false);
 var fade_out_knob = createKnob('fade_out_knob', 0, 10, 'Out (s)', false);
 var rate_knob = createKnob('rate_knob', 0.2, 3, '', true, 1);
@@ -498,10 +498,13 @@ function fadeOut(duration) {
 }
 
 function amplify(value) {
-    wavesurfer.backend.gainNode.gain.value = value;
+    wavesurfer.backend.gainNode.gain.value = Math.pow(10, (value / 20));
+    /*
     wavesurfer.params.barHeight = value;
     wavesurfer.empty();
     wavesurfer.loadDecodedBuffer(wavesurfer.backend.buffer);
+
+     */
 }
 
 // Region related functions
@@ -690,22 +693,6 @@ function applyFilter(filterType, frequency, Q, fromCancel = false) {
     }
 }
 
-function applyEffect(effect, value) {
-    switch (effect) {
-        case 'amplify':
-            amplify(value);
-            break;
-        case 'fadein':
-            fadeIn(value);
-            break;
-        case 'fadeout':
-            fadeOut(value);
-            break;
-        default:
-            break;
-    }
-}
-
 function createKnob(divID, valMin, valMax, label, decimal, defaultValue = 0) {
 	var myKnob = pureknob.createKnob(71, 71);
 	myKnob.setProperty('valMin', valMin);
@@ -717,6 +704,7 @@ function createKnob(divID, valMin, valMax, label, decimal, defaultValue = 0) {
     myKnob.setProperty('label', label);
     myKnob.setProperty('colorLabel', '#AB4646');
     myKnob.setProperty('decimal', decimal);
+    myKnob.setProperty('textScale', 0.8);
 	var node = myKnob.node();
 	var elem = document.getElementById(divID);
 	elem.appendChild(node);
@@ -730,22 +718,6 @@ function changeKnobValues(knob, valMin, valMax, label, defaultValue) {
     knob.setProperty('val', defaultValue);
 }
 
-function chooseKnobConfig(value) {
-    switch (value) {
-        case 'amplify':
-            changeKnobValues(effects_knob, 1, 5, '', 1);
-            effects_knob.setValue(wavesurfer.backend.gainNode.gain.value);
-            break;
-        case 'fadein':
-            changeKnobValues(effects_knob, 1, 10, 'Seconds', 1);
-            break;
-        case 'fadeout':
-            changeKnobValues(effects_knob, 1, 10, 'Seconds', 1);
-            break;
-        default:
-            break;
-    }
-}
 
 function cancelFilter() {
     applyFilter('allpass', 0, 1,true);
