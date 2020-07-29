@@ -57,6 +57,9 @@ function initQuerySelectors() {
     document.querySelector('#zoom_out').onclick = function () {
         zoomOut();
     }
+    document.querySelector('#zoom_selected_btn').onclick = function () {
+        zoomToRegion();
+    }
     document.querySelector('#get_selection_btn').onclick = function () {
         toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Get Selected Region', tooltipTextRedo: 'Redo Get Selected Region'});
         getSelectedRegion();
@@ -330,8 +333,12 @@ function playPause() {
     wavesurfer.playPause();
 }
 
-function zoomIn() {
-    zoomValue += zoomRatio
+function zoomIn(value = null) {
+    if (value) {
+        zoomValue = value;
+    } else {
+        zoomValue += zoomRatio
+    }
     wavesurfer.zoom(zoomValue);
 }
 
@@ -340,6 +347,15 @@ function zoomOut() {
         zoomValue -= zoomRatio
         wavesurfer.zoom(zoomValue);
     }
+}
+
+function zoomToRegion() {
+    var region = getRegion();
+    var centerPoint = (region.start + region.end) / 2;
+    var duration = region.end - region.start;
+    var whereToCenterWaveform = centerPoint / wavesurfer.getDuration();
+    wavesurfer.seekAndCenter(whereToCenterWaveform);
+    zoomIn(900 / duration);
 }
 
 // Print aux function
@@ -582,6 +598,8 @@ function getOriginalSample(song) {
     wavesurfer.clearRegions();
     wavesurfer.empty()
     wavesurfer.load(song);
+    zoomIn(900 / wavesurfer.getDuration());
+    wavesurfer.seekTo(0);
     setDisabledWhenNoRegion(true);
 }
 
