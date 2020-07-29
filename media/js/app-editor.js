@@ -1,8 +1,6 @@
 var sound = "https://freesound.org" + document.getElementById("waveform").getAttribute("sound_url");
 var wavesurfer = createWavesurfer(sound);
 
-var st;
-var soundtouchNode;
 
 var zoomValueInit = 0
 var zoomValue = 0
@@ -101,32 +99,76 @@ function initQuerySelectors() {
 
 function initWavesurferEvents() {
     // Reset region when clicking the waveform
-	wavesurfer.on('seek', function(region) {
+    wavesurfer.on('seek', function(region) {
         wavesurfer.clearRegions();
         setDisabledWhenNoRegion(true);
-	});
+        seekingPos = ~~(wavesurfer.backend.getPlayedPercents() * wavesurfer.backend.buffer.length);
+    });
 
-	// Delete previous region when creating a new one
-	wavesurfer.on('region-created', function() {
-		deletePreviousRegion();
-	});
+    // Delete previous region when creating a new one
+    wavesurfer.on('region-created', function() {
+        deletePreviousRegion();
+    });
 
-	wavesurfer.on('ready', function() {
-	    zoomValueInit = 900 / wavesurfer.getDuration();
-	    zoomValue = zoomValueInit
+    wavesurfer.on('ready', function() {
+        zoomValueInit = 900 / wavesurfer.getDuration();
+        zoomValue = zoomValueInit
 
-        st = new window.soundtouch.SoundTouch(
+        var st = new window.soundtouch.SoundTouch(
             wavesurfer.backend.ac.sampleRate
         );
+        var buffer = wavesurfer.backend.buffer;
+        var channels = buffer.numberOfChannels;
+        var l = buffer.getChannelData(0);
+        var r = channels > 1 ? buffer.getChannelData(1) : l;
+        var length = buffer.length;
+        var seekingPos = null;
+        var seekingDiff = 0;
+
+        var source = {
+            extract: function(target, numFrames, position) {
+                if (seekingPos != null) {
+                    seekingDiff = seekingPos - position;
+                    seekingPos = null;
+                }
+
+                position += seekingDiff;
+
+                for (var i = 0; i < numFrames; i++) {
+                    target[i * 2] = l[i + position];
+                    target[i * 2 + 1] = r[i + position];
+                }
+
+                return Math.min(numFrames, length - position);
+            }
+        };
+
+        var soundtouchNode;
+
+        wavesurfer.on('play', function() {
+            seekingPos = ~~(wavesurfer.backend.getPlayedPercents() * length);
+            st.tempo = wavesurfer.getPlaybackRate();
+            if (st.tempo === 1) {
+                wavesurfer.backend.disconnectFilters();
+            } else {
+                if (!soundtouchNode) {
+                    var filter = new window.soundtouch.SimpleFilter(source, st);
+                    soundtouchNode = window.soundtouch.getWebAudioNode(
+                        wavesurfer.backend.ac,
+                        filter
+                    );
+                }
+                wavesurfer.backend.setFilter(soundtouchNode);
+            }
+        })
+        wavesurfer.on('finish', function() {
+            soundtouchNode && soundtouchNode.disconnect();
+        });
+
+        wavesurfer.on('pause', function() {
+            soundtouchNode && soundtouchNode.disconnect();
+        });
     })
-
-     wavesurfer.on('pause', function() {
-         soundtouchNode && soundtouchNode.disconnect();
-     });
-
-    wavesurfer.on('play', function() {
-        changePlaybackRate()
-    });
 }
 
 function initKnobListeners() {
@@ -740,48 +782,8 @@ function resetFilters() {
     applyFilter('allpass', 0, 1);
 }
 
-function changePlaybackRate(value = null) {
-    if (value) {
-        wavesurfer.setPlaybackRate(value);
-    }
-
-    var buffer = wavesurfer.backend.buffer;
-    var channels = buffer.numberOfChannels;
-    var l = buffer.getChannelData(0);
-    var r = channels > 1 ? buffer.getChannelData(1) : l;
-    var length = buffer.length;
-    var seekingPos = null;
-    var seekingDiff = 0;
-    var source = {
-        extract: function(target, numFrames, position) {
-            if (seekingPos != null) {
-                seekingDiff = seekingPos - position;
-                seekingPos = null;
-            }
-
-            position += seekingDiff;
-
-            for (var i = 0; i < numFrames; i++) {
-                target[i * 2] = l[i + position];
-                target[i * 2 + 1] = r[i + position];
-            }
-
-            return Math.min(numFrames, length - position);
-        }
-    };
-    st.tempo = wavesurfer.getPlaybackRate();
-    if (st.tempo === 1) {
-        wavesurfer.backend.disconnectFilters();
-    } else {
-        if (!soundtouchNode) {
-            var filter = new window.soundtouch.SimpleFilter(source, st);
-            soundtouchNode = window.soundtouch.getWebAudioNode(
-                wavesurfer.backend.ac,
-                filter
-            );
-        }
-        wavesurfer.backend.setFilter(soundtouchNode);
-    }
+function changePlaybackRate(value) {
+    wavesurfer.setPlaybackRate(value);
 }
 
 // Key events
