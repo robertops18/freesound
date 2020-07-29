@@ -1,6 +1,8 @@
 var sound = "https://freesound.org" + document.getElementById("waveform").getAttribute("sound_url");
 var wavesurfer = createWavesurfer(sound);
-var pitchShifter;
+
+var st;
+var soundtouchNode;
 
 var zoomValueInit = 0
 var zoomValue = 0
@@ -41,14 +43,6 @@ var fade_out_knob = createKnob('fade_out_knob', 0, 10, 'Out (s)', false);
 var rate_knob = createKnob('rate_knob', 0.2, 3, '', true, 1);
 
 initKnobListeners();
-
-/*
-// Pitch slider
-const pitchSlider = document.getElementById('pitchSlider');
-pitchSlider.addEventListener('input', function () {
-    pitchShifter.pitch = this.value;
-});
-*/
 
 // Undo and redo data structures
 var undoArray = []
@@ -103,11 +97,6 @@ function initQuerySelectors() {
     document.querySelector('#redo').onclick = function () {
         redo();
     }
-    /*
-    document.querySelector('#init_pitch_shifter').onclick = function () {
-        initPitchShifter();
-    }
-     */
 }
 
 function initWavesurferEvents() {
@@ -125,16 +114,19 @@ function initWavesurferEvents() {
 	wavesurfer.on('ready', function() {
 	    zoomValueInit = 900 / wavesurfer.getDuration();
 	    zoomValue = zoomValueInit
+
+        st = new window.soundtouch.SoundTouch(
+            wavesurfer.backend.ac.sampleRate
+        );
     })
 
-	/*
-	wavesurfer.on('finish', function() {
-	    print('FINISH!')
-		wavesurfer.backend.gainNode.gain.cancelScheduledValues(wavesurfer.backend.ac.currentTime);
-	    wavesurfer.backend.gainNode.gain.setValueAtTime(1.0, 0.0);
-	    print(wavesurfer.backend.gainNode)
-	});
-	 */
+     wavesurfer.on('pause', function() {
+         soundtouchNode && soundtouchNode.disconnect();
+     });
+
+    wavesurfer.on('play', function() {
+        changePlaybackRate()
+    });
 }
 
 function initKnobListeners() {
@@ -255,7 +247,7 @@ function initKnobListeners() {
         if (mouseUp) {
             //TODO: Undo and redo playback rate
         }
-        wavesurfer.setPlaybackRate(value)
+        changePlaybackRate(value);
     }
     rate_knob.addListener(changeListenerPlaybackRate);
 }
@@ -290,14 +282,6 @@ function createWavesurfer(song) {
     wavesurfer.load(song);
 
     return wavesurfer;
-}
-
-function initPitchShifter() {
-    pitchShifter = getPitchShifter(wavesurfer.backend.ac, wavesurfer.backend.buffer);
-    pitchShifter.pitch = pitchSlider.value;
-    //pitchShifter.connect(wavesurfer.backend.gainNode);
-    print(pitchShifter)
-    //wavesurfer.backend.gainNode.connect(wavesurfer.backend.ac.destination);
 }
 
 function playPause() {
@@ -685,10 +669,12 @@ function setDisabledWhenNoRegion(status) {
     document.querySelector('#delete_region').disabled = status;
     document.querySelector('#empty_region').disabled = status;
     document.querySelector('#get_selection_btn').disabled = status;
+    document.querySelector('#zoom_selected_btn').disabled = status;
 
     document.querySelector('#delete_region').style.pointerEvents = status === true ? 'none' : 'auto';
     document.querySelector('#empty_region').style.pointerEvents = status === true ? 'none' : 'auto';
     document.querySelector('#get_selection_btn').style.pointerEvents = status === true ? 'none' : 'auto';
+    document.querySelector('#zoom_selected_btn').style.pointerEvents = status === true ? 'none' : 'auto';
 }
 
 function getRegion() {
@@ -752,6 +738,50 @@ function cancelFilter() {
 function resetFilters() {
 	filters_knob.setValue(0);
     applyFilter('allpass', 0, 1);
+}
+
+function changePlaybackRate(value = null) {
+    if (value) {
+        wavesurfer.setPlaybackRate(value);
+    }
+
+    var buffer = wavesurfer.backend.buffer;
+    var channels = buffer.numberOfChannels;
+    var l = buffer.getChannelData(0);
+    var r = channels > 1 ? buffer.getChannelData(1) : l;
+    var length = buffer.length;
+    var seekingPos = null;
+    var seekingDiff = 0;
+    var source = {
+        extract: function(target, numFrames, position) {
+            if (seekingPos != null) {
+                seekingDiff = seekingPos - position;
+                seekingPos = null;
+            }
+
+            position += seekingDiff;
+
+            for (var i = 0; i < numFrames; i++) {
+                target[i * 2] = l[i + position];
+                target[i * 2 + 1] = r[i + position];
+            }
+
+            return Math.min(numFrames, length - position);
+        }
+    };
+    st.tempo = wavesurfer.getPlaybackRate();
+    if (st.tempo === 1) {
+        wavesurfer.backend.disconnectFilters();
+    } else {
+        if (!soundtouchNode) {
+            var filter = new window.soundtouch.SimpleFilter(source, st);
+            soundtouchNode = window.soundtouch.getWebAudioNode(
+                wavesurfer.backend.ac,
+                filter
+            );
+        }
+        wavesurfer.backend.setFilter(soundtouchNode);
+    }
 }
 
 // Key events
