@@ -116,66 +116,11 @@ function initWavesurferEvents() {
     wavesurfer.on('ready', function() {
         zoomValueInit = 900 / wavesurfer.getDuration();
         zoomValue = zoomValueInit
-
-        var st = new window.soundtouch.SoundTouch(
-            wavesurfer.backend.ac.sampleRate
-        );
-        var buffer = wavesurfer.backend.buffer;
-        var channels = buffer.numberOfChannels;
-        var l = buffer.getChannelData(0);
-        var r = channels > 1 ? buffer.getChannelData(1) : l;
-        var length = buffer.length;
-        var seekingPos = null;
-        var seekingDiff = 0;
-
-        var source = {
-            extract: function(target, numFrames, position) {
-                if (seekingPos != null) {
-                    seekingDiff = seekingPos - position;
-                    seekingPos = null;
-                }
-
-                position += seekingDiff;
-
-                for (var i = 0; i < numFrames; i++) {
-                    target[i * 2] = l[i + position];
-                    target[i * 2 + 1] = r[i + position];
-                }
-
-                return Math.min(numFrames, length - position);
-            }
-        };
-
-        var soundtouchNode;
-
-        wavesurfer.on('play', function() {
-            seekingPos = ~~(wavesurfer.backend.getPlayedPercents() * length);
-            st.tempo = wavesurfer.getPlaybackRate();
-            if (st.tempo === 1) {
-                wavesurfer.backend.disconnectFilters();
-            } else {
-                if (!soundtouchNode) {
-                    var filter = new window.soundtouch.SimpleFilter(source, st);
-                    soundtouchNode = window.soundtouch.getWebAudioNode(
-                        wavesurfer.backend.ac,
-                        filter
-                    );
-                }
-                wavesurfer.backend.setFilter(soundtouchNode);
-            }
-        })
-        wavesurfer.on('finish', function() {
-            soundtouchNode && soundtouchNode.disconnect();
-        });
-
-        wavesurfer.on('pause', function() {
-            soundtouchNode && soundtouchNode.disconnect();
-        });
     })
 }
 
 function initKnobListeners() {
-    var lowpassFilter, highpassFilter, bandpassFilterFreq, bandpassFilterQ;
+    var lowpassFilter = null, highpassFilter = null, bandpassFilter = null;
     var changeListenerLowpass = function(knob, value, mouseUp) {
         if (value !== 0) {
             if (mouseUp) {
@@ -186,12 +131,12 @@ function initKnobListeners() {
                     tooltipTextUndo: 'Undo Lowpass filter',
                     tooltipTextRedo: 'Redo Lowpass filter'
                 });
-                applyFilter('lowpass', value, 1);
+                lowpassFilter = applyFilter('lowpass', value, 1);
             } else {
                 if (lowpassFilter) {
                     lowpassFilter.frequency.value = value;
                 } else {
-                    lowpassFilter = applyFilter('lowpass', value, 1, true);
+                    lowpassFilter = applyFilter(lowpassFilter, 'lowpass', value, 1, true);
                 }
             }
         }
@@ -208,19 +153,19 @@ function initKnobListeners() {
                     tooltipTextUndo: 'Undo Highpass filter',
                     tooltipTextRedo: 'Redo Highpass filter'
                 });
-                applyFilter('highpass', value, 1);
+                highpassFilter = applyFilter('highpass', value, 1);
             } else {
                 if (highpassFilter) {
                     highpassFilter.frequency.value = value;
                 } else {
-                    highpassFilter = applyFilter('highpass', value, 1, true);
+                    highpassFilter = applyFilter(highpassFilter, 'highpass', value, 1, true);
                 }
             }
         }
     }
     highpass_knob.addListener(changeListenerHighpass);
 
-    var changeListenerBandpassFreq = function(knob, value, mouseUp) {
+    var changeListenerBandpass = function(knob, value, mouseUp) {
         if (value !== 0) {
             if (mouseUp) {
                 toUndo('filter', {
@@ -230,17 +175,17 @@ function initKnobListeners() {
                     tooltipTextUndo: 'Undo Bandpass filter Freq',
                     tooltipTextRedo: 'Redo Bandpass filter Freq'
                 });
-                applyFilter('bandpass', value, bandpass_q_knob.getValue());
+                bandpassFilter = applyFilter('bandpass', value, bandpass_q_knob.getValue());
             } else {
-                if (bandpassFilterFreq) {
-                    bandpassFilterFreq.frequency.value = value;
+                if (bandpassFilter) {
+                    bandpassFilter.frequency.value = value;
                 } else {
-                    bandpassFilterFreq = applyFilter('bandpass', value, bandpass_q_knob.getValue(), true);
+                    bandpassFilter = applyFilter(bandpassFilter, 'bandpass', value, bandpass_q_knob.getValue(), true);
                 }
             }
         }
     }
-    bandpass_freq_knob.addListener(changeListenerBandpassFreq);
+    bandpass_freq_knob.addListener(changeListenerBandpass);
 
     var changeListenerBandpassQ = function(knob, value, mouseUp) {
         if (bandpass_freq_knob.getValue() > 0) {
@@ -252,12 +197,12 @@ function initKnobListeners() {
                     tooltipTextUndo: 'Undo Bandpass filter Q',
                     tooltipTextRedo: 'Redo Bandpass filter Q'
                 });
-                applyFilter('bandpass', bandpass_freq_knob.getValue(), value);
+                bandpassFilter = applyFilter('bandpass', bandpass_freq_knob.getValue(), value);
             } else {
-                if (bandpassFilterQ) {
-                    bandpassFilterQ.Q.value = value;
+                if (bandpassFilter) {
+                    bandpassFilter.Q.value = value;
                 } else {
-                    bandpassFilterQ = applyFilter('bandpass', bandpass_freq_knob.getValue(), value, true);
+                    bandpassFilter = applyFilter(bandpassFilter, 'bandpass', bandpass_freq_knob.getValue(), value, true);
                 }
             }
         }
@@ -481,17 +426,65 @@ function concatBuffer(buffer1, buffer2) {
 }
 
 function exportBufferToFile() {
-    var blob = encodeWAV(wavesurfer.backend.buffer);
+    // Offline context creation
+    wavesurfer.backend.setOfflineAudioContext(wavesurfer.backend.buffer.length / wavesurfer.getPlaybackRate(), wavesurfer.backend.ac.sampleRate);
+    var offlineCtx = wavesurfer.backend.offlineAc;
 
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    document.body.appendChild(a);
-    a.style = "display: none";
-    a.href = url;
-    var sound = sound_id + '__' + username + '__' + sound_name + '__EDIT.wav';
-    a.download = sound;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    // Offline nodes
+    var offlineSource = offlineCtx.createBufferSource();
+    var offlineAnalyser = offlineCtx.createAnalyser();
+    var offlineGain = offlineCtx.createGain();
+    var offlineScriptProcessor = offlineCtx.createScriptProcessor();
+
+    // Offline connections
+    offlineSource.connect(offlineAnalyser);
+    var offlineFilters = createOfflineFilters(offlineCtx);
+    offlineFilters.reduce(function (prev, curr) {
+        prev.connect(curr);
+        return curr;
+        }, offlineAnalyser).connect(offlineGain);
+    offlineGain.connect(offlineCtx.destination);
+    offlineScriptProcessor.connect(offlineCtx.destination);
+
+    // Offline values
+    offlineSource.buffer = wavesurfer.backend.buffer;
+    offlineSource.playbackRate.value = wavesurfer.getPlaybackRate();
+    offlineGain.gain.value = wavesurfer.backend.gainNode.gain.value;
+
+    // Offline start
+    offlineSource.start();
+
+    offlineCtx.startRendering();
+    offlineCtx.oncomplete = function(ev) {
+        console.log('Rendered!');
+        var blob = encodeWAV(ev.renderedBuffer);
+
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        document.body.appendChild(a);
+        a.style = "display: none";
+        a.href = url;
+        var sound = sound_id + '__' + username + '__' + sound_name + '__EDIT.wav';
+        a.download = sound;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+}
+
+function createOfflineFilters(offlineCtx) {
+    var offlineFilters = [];
+    var filters = wavesurfer.backend.filters;
+    if (filters.length === 0) {
+        return offlineFilters;
+    }
+    filters.forEach((f) => {
+        var offlineFilter = offlineCtx.createBiquadFilter();
+        offlineFilter.type = f.type;
+        offlineFilter.frequency.value = f.frequency.value;
+        offlineFilter.Q.value = f.Q.value;
+        offlineFilters.push(offlineFilter);
+    });
+    return offlineFilters;
 }
 
 function writeUTFBytes(view, offset, string) {
@@ -748,21 +741,23 @@ function numOfRegions() {
 }
 
 // Filter related functions
-function applyFilter(filterType, frequency, Q, fromCancel = false) {
-	var filter = wavesurfer.backend.ac.createBiquadFilter();
-	filter.type = filterType;
-	filter.frequency.value = frequency;
-	filter.Q.value = Q;
-	wavesurfer.backend.setFilter(filter);
+function applyFilter(filter, filterType, frequency, Q, fromCancel = false) {
+    if (!filter) {
+        filter = wavesurfer.backend.ac.createBiquadFilter();
+        filter.type = filterType;
+        wavesurfer.backend.setFilter(filter);
+    }
+    filter.frequency.value = frequency;
+    filter.Q.value = Q;
 
-	if (!fromCancel) {
-	    appliedFilters.push({
+    if (!fromCancel) {
+        appliedFilters.push({
             filterType: filterType,
             frequency: frequency,
             Q: Q
         });
     }
-	return filter;
+    return filter;
 }
 
 function createKnob(divID, valMin, valMax, label, decimal, defaultValue = 0) {
@@ -792,12 +787,12 @@ function changeKnobValues(knob, valMin, valMax, label, defaultValue) {
 
 
 function cancelFilter() {
-    applyFilter('allpass', 0, 1,true);
+    applyFilter(null, 'allpass', 0, 1,true);
 }
 
 function resetFilters() {
 	filters_knob.setValue(0);
-    applyFilter('allpass', 0, 1);
+    applyFilter(null, 'allpass', 0, 1);
 }
 
 function changePlaybackRate(value) {
