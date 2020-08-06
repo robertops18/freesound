@@ -8,10 +8,10 @@ var zoomRatio = 10
 
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 
-document.body.onkeyup = function(event) {
+document.body.onkeyup = function (event) {
     keyUp(event);
 }
-document.body.onkeydown = function(event) {
+document.body.onkeydown = function (event) {
     if (event.keyCode == 32 || event.keyCode == 39 || event.keyCode == 37) {
         return false;
     } else {
@@ -30,9 +30,9 @@ initQuerySelectors();
 initWavesurferEvents();
 
 //Filters and effects knob
-var lowpass_knob = createKnob('lowpass_knob', 0, 20000, 'Hz', true);
-var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 20000, 'Hz', true);
-var bandpass_q_knob = createKnob('bandpass_q_knob', 0, 100, 'Q', true,1);
+var lowpass_knob = createKnob('lowpass_knob', 0, 20000, 'Hz', true, 20000);
+var bandpass_freq_knob = createKnob('bandpass_freq_knob', 0, 20000, 'Hz', true, 20000);
+var bandpass_q_knob = createKnob('bandpass_q_knob', 0, 100, 'Q', true);
 var highpass_knob = createKnob('highpass_knob', 0, 20000, 'Hz', true);
 
 var amplify_knob = createKnob('amplify_knob', -20, 20, 'dB', true, 0);
@@ -41,6 +41,10 @@ var fade_out_knob = createKnob('fade_out_knob', 0, 10, 'Out (s)', false);
 var rate_knob = createKnob('rate_knob', 0.2, 3, '', true, 1);
 
 initKnobListeners();
+
+var lowpassFilter = applyFilter(lowpassFilter, 'lowpass', lowpass_knob.getValue(), 1);
+var highpassFilter = applyFilter(highpassFilter, 'highpass', highpass_knob.getValue(), 1);
+var bandpassFilter = applyFilter(bandpassFilter, 'bandpass', bandpass_freq_knob.getValue(), bandpass_q_knob.getValue());
 
 // Undo and redo data structures
 var undoArray = []
@@ -61,29 +65,43 @@ function initQuerySelectors() {
         zoomToRegion();
     }
     document.querySelector('#get_selection_btn').onclick = function () {
-        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Get Selected Region', tooltipTextRedo: 'Redo Get Selected Region'});
+        toUndo('buffer', {
+            buffer: wavesurfer.backend.buffer,
+            tooltipTextUndo: 'Undo Get Selected Region',
+            tooltipTextRedo: 'Redo Get Selected Region'
+        });
         getSelectedRegion();
     }
     document.querySelector('#undo_get_selection_btn').onclick = function () {
-        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Get Original Sample', tooltipTextRedo: 'Redo Get Original Sample'});
+        toUndo('buffer', {
+            buffer: wavesurfer.backend.buffer,
+            tooltipTextUndo: 'Undo Get Original Sample',
+            tooltipTextRedo: 'Redo Get Original Sample'
+        });
         getOriginalSample(sound);
     }
-    /*
-    document.querySelector('#reset_filters').onclick = function () {
-        resetFilters();
-    }
-
-     */
     document.querySelector('#delete_region').onclick = function () {
-        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Delete Region', tooltipTextRedo: 'Redo Delete Region'});
+        toUndo('buffer', {
+            buffer: wavesurfer.backend.buffer,
+            tooltipTextUndo: 'Undo Delete Region',
+            tooltipTextRedo: 'Redo Delete Region'
+        });
         deleteRegion();
     }
     document.querySelector('#empty_region').onclick = function () {
-        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Clear Region', tooltipTextRedo: 'Redo Clear Region'});
+        toUndo('buffer', {
+            buffer: wavesurfer.backend.buffer,
+            tooltipTextUndo: 'Undo Clear Region',
+            tooltipTextRedo: 'Redo Clear Region'
+        });
         emptyRegion();
     }
     document.querySelector('#reverse').onclick = function () {
-        toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Reverse', tooltipTextRedo: 'Redo Reverse'});
+        toUndo('buffer', {
+            buffer: wavesurfer.backend.buffer,
+            tooltipTextUndo: 'Undo Reverse',
+            tooltipTextRedo: 'Redo Reverse'
+        });
         reverse();
     }
     document.querySelector('#export').onclick = function () {
@@ -102,114 +120,118 @@ function initQuerySelectors() {
 
 function initWavesurferEvents() {
     // Reset region when clicking the waveform
-    wavesurfer.on('seek', function(region) {
+    wavesurfer.on('seek', function (region) {
         wavesurfer.clearRegions();
         setDisabledWhenNoRegion(true);
         seekingPos = ~~(wavesurfer.backend.getPlayedPercents() * wavesurfer.backend.buffer.length);
     });
 
     // Delete previous region when creating a new one
-    wavesurfer.on('region-created', function() {
+    wavesurfer.on('region-created', function () {
         deletePreviousRegion();
     });
 
-    wavesurfer.on('ready', function() {
+    wavesurfer.on('ready', function () {
         zoomValueInit = 900 / wavesurfer.getDuration();
         zoomValue = zoomValueInit
     })
 }
 
 function initKnobListeners() {
-    var lowpassFilter = null, highpassFilter = null, bandpassFilter = null;
-    var changeListenerLowpass = function(knob, value, mouseUp) {
-        if (value !== 0) {
-            if (mouseUp) {
-                toUndo('filter', {
-                    filterType: 'lowpass',
-                    frequency: value,
-                    Q: 1,
-                    tooltipTextUndo: 'Undo Lowpass filter',
-                    tooltipTextRedo: 'Redo Lowpass filter'
-                });
-                lowpassFilter = applyFilter('lowpass', value, 1);
-            } else {
-                if (lowpassFilter) {
-                    lowpassFilter.frequency.value = value;
-                } else {
-                    lowpassFilter = applyFilter(lowpassFilter, 'lowpass', value, 1, true);
-                }
-            }
+    var changeListenerLowpass = function (knob, value, mouseUp) {
+        if (mouseUp) {
+            toUndo('filter', {
+                filterType: 'lowpass',
+                frequency: value,
+                Q: 1,
+                tooltipTextUndo: 'Undo Lowpass filter',
+                tooltipTextRedo: 'Redo Lowpass filter'
+            });
+            lowpassFilter.frequency.value = value;
+            appliedFilters.push({
+                filterType: 'lowpass',
+                frequency: lowpassFilter.frequency.value,
+                Q: lowpassFilter.Q.value
+            });
+        } else {
+            lowpassFilter.frequency.value = value;
         }
     }
     lowpass_knob.addListener(changeListenerLowpass);
 
-    var changeListenerHighpass = function(knob, value, mouseUp) {
-        if (value !== 0) {
-            if (mouseUp) {
-                toUndo('filter', {
-                    filterType: 'highpass',
-                    frequency: value,
-                    Q: 1,
-                    tooltipTextUndo: 'Undo Highpass filter',
-                    tooltipTextRedo: 'Redo Highpass filter'
-                });
-                highpassFilter = applyFilter('highpass', value, 1);
-            } else {
-                if (highpassFilter) {
-                    highpassFilter.frequency.value = value;
-                } else {
-                    highpassFilter = applyFilter(highpassFilter, 'highpass', value, 1, true);
-                }
-            }
+    var changeListenerHighpass = function (knob, value, mouseUp) {
+        if (mouseUp) {
+            toUndo('filter', {
+                filterType: 'highpass',
+                frequency: value,
+                Q: 1,
+                tooltipTextUndo: 'Undo Highpass filter',
+                tooltipTextRedo: 'Redo Highpass filter'
+            });
+            highpassFilter.frequency.value = value;
+            appliedFilters.push({
+                filterType: 'highpass',
+                frequency: highpassFilter.frequency.value,
+                Q: highpassFilter.Q.value
+            });
+        } else {
+            highpassFilter.frequency.value = value;
         }
+
     }
     highpass_knob.addListener(changeListenerHighpass);
 
-    var changeListenerBandpass = function(knob, value, mouseUp) {
-        if (value !== 0) {
+    var changeListenerBandpassFreq = function (knob, value, mouseUp) {
+        if (value > 0 && bandpass_q_knob.getValue() > 0) {
             if (mouseUp) {
                 toUndo('filter', {
                     filterType: 'bandpass',
                     frequency: value,
                     Q: bandpass_q_knob.getValue(),
-                    tooltipTextUndo: 'Undo Bandpass filter Freq',
-                    tooltipTextRedo: 'Redo Bandpass filter Freq'
+                    tooltipTextUndo: 'Undo Bandpass filter',
+                    tooltipTextRedo: 'Redo Bandpass filter'
                 });
-                bandpassFilter = applyFilter('bandpass', value, bandpass_q_knob.getValue());
+                bandpassFilter.frequency.value = value;
+                bandpassFilter.Q.value = bandpass_q_knob.getValue();
+                appliedFilters.push({
+                    filterType: 'bandpass',
+                    frequency: bandpassFilter.frequency.value,
+                    Q: bandpassFilter.Q.value
+                });
             } else {
-                if (bandpassFilter) {
-                    bandpassFilter.frequency.value = value;
-                } else {
-                    bandpassFilter = applyFilter(bandpassFilter, 'bandpass', value, bandpass_q_knob.getValue(), true);
-                }
+                bandpassFilter.frequency.value = value;
+                bandpassFilter.Q.value = bandpass_q_knob.getValue();
             }
         }
     }
-    bandpass_freq_knob.addListener(changeListenerBandpass);
+    bandpass_freq_knob.addListener(changeListenerBandpassFreq);
 
-    var changeListenerBandpassQ = function(knob, value, mouseUp) {
-        if (bandpass_freq_knob.getValue() > 0) {
+    var changeListenerBandpassQ = function (knob, value, mouseUp) {
+        if (bandpass_freq_knob.getValue() > 0 && value > 0) {
             if (mouseUp) {
                 toUndo('filter', {
                     filterType: 'bandpass',
                     frequency: bandpass_freq_knob.getValue(),
                     Q: value,
-                    tooltipTextUndo: 'Undo Bandpass filter Q',
-                    tooltipTextRedo: 'Redo Bandpass filter Q'
+                    tooltipTextUndo: 'Undo Bandpass filter',
+                    tooltipTextRedo: 'Redo Bandpass filter'
                 });
-                bandpassFilter = applyFilter('bandpass', bandpass_freq_knob.getValue(), value);
+                bandpassFilter.frequency.value = bandpass_freq_knob.getValue();
+                bandpassFilter.Q.value = value;
+                appliedFilters.push({
+                    filterType: 'bandpass',
+                    frequency: bandpassFilter.frequency.value,
+                    Q: bandpassFilter.Q.value
+                });
             } else {
-                if (bandpassFilter) {
-                    bandpassFilter.Q.value = value;
-                } else {
-                    bandpassFilter = applyFilter(bandpassFilter, 'bandpass', bandpass_freq_knob.getValue(), value, true);
-                }
+                bandpassFilter.frequency.value = bandpass_freq_knob.getValue();
+                bandpassFilter.Q.value = value;
             }
         }
     }
     bandpass_q_knob.addListener(changeListenerBandpassQ);
 
-    var changeListenerAmplify = function(knob, value, mouseUp) {
+    var changeListenerAmplify = function (knob, value, mouseUp) {
         if (mouseUp) {
             //TODO: Undo and redo amplify
         }
@@ -217,7 +239,7 @@ function initKnobListeners() {
     }
     amplify_knob.addListener(changeListenerAmplify);
 
-    var changeListenerFadeIn = function(knob, value, mouseUp) {
+    var changeListenerFadeIn = function (knob, value, mouseUp) {
         if (mouseUp) {
             //TODO: Undo and redo fadein
         }
@@ -225,7 +247,7 @@ function initKnobListeners() {
     }
     fade_in_knob.addListener(changeListenerFadeIn);
 
-    var changeListenerFadeOut = function(knob, value, mouseUp) {
+    var changeListenerFadeOut = function (knob, value, mouseUp) {
         if (mouseUp) {
             //TODO: Undo and redo fadeout
         }
@@ -233,7 +255,7 @@ function initKnobListeners() {
     }
     fade_out_knob.addListener(changeListenerFadeOut);
 
-    var changeListenerPlaybackRate = function(knob, value, mouseUp) {
+    var changeListenerPlaybackRate = function (knob, value, mouseUp) {
         if (mouseUp) {
             //TODO: Undo and redo playback rate
         }
@@ -253,22 +275,22 @@ function createWavesurfer(song) {
         height: 200,
         plugins: [
             WaveSurfer.cursor.create({
-              showTime: true,
-              opacity: 1,
-              customShowTimeStyle: {
-                'background-color': '#000',
-                color: '#fff',
-                padding: '2px',
-                'font-size': '10px'
-              }
+                showTime: true,
+                opacity: 1,
+                customShowTimeStyle: {
+                    'background-color': '#000',
+                    color: '#fff',
+                    padding: '2px',
+                    'font-size': '10px'
+                }
             }),
-            WaveSurfer.regions.create({drag:false, color: 'rgba(256, 256, 256, 1)'}),
+            WaveSurfer.regions.create({drag: false, color: 'rgba(256, 256, 256, 1)'}),
             WaveSurfer.timeline.create({
                 container: '#wave-timeline'
             })
         ]
     });
-    wavesurfer.enableDragSelection({drag:false, color: 'rgba(256, 256, 256, 0.3)'});
+    wavesurfer.enableDragSelection({drag: false, color: 'rgba(256, 256, 256, 0.3)'});
     wavesurfer.load(song);
 
     return wavesurfer;
@@ -321,21 +343,40 @@ function undo() {
         }
         switch (undoAction.type) {
             case 'buffer':
-                toRedo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: undoAction.action.tooltipTextUndo, tooltipTextRedo: undoAction.action.tooltipTextRedo});
+                toRedo('buffer', {
+                    buffer: wavesurfer.backend.buffer,
+                    tooltipTextUndo: undoAction.action.tooltipTextUndo,
+                    tooltipTextRedo: undoAction.action.tooltipTextRedo
+                });
                 var previousBuffer = undoAction.action.buffer;
                 wavesurfer.empty()
                 wavesurfer.loadDecodedBuffer(previousBuffer);
                 break;
             case 'filter': // TODO: Undo functions with filters
                 toRedo('filter', undoAction.action);
-                // 1. Pop filter from array
-                appliedFilters.pop()
-                // 2. Cancel its behaviour or apply previous one
-                if (appliedFilters.length > 0) {
-                    var lastFilter = appliedFilters[appliedFilters.length - 1]
-                    applyFilter(lastFilter.filterType, lastFilter.frequency, lastFilter.Q, true);
-                } else {
-                    cancelFilter()
+                appliedFilters.pop();
+                var sameFilter;
+                appliedFilters.forEach((filter) => {
+                    if (filter.filterType === undoAction.action.filterType) {
+                        sameFilter = filter
+                    }
+                });
+
+                switch (undoAction.action.filterType) {
+                    case 'lowpass':
+                        lowpassFilter.frequency.value = sameFilter ? sameFilter.frequency : 20000;
+                        lowpass_knob.setValue(sameFilter ? sameFilter.frequency : 20000)
+                        break;
+                    case 'highpass':
+                        highpassFilter.frequency.value = sameFilter ? sameFilter.frequency : 0;
+                        highpass_knob.setValue(sameFilter ? sameFilter.frequency : 0)
+                        break;
+                    case 'bandpass':
+                        bandpassFilter.frequency.value = sameFilter ? sameFilter.frequency : 20000;
+                        bandpassFilter.Q.value = sameFilter ? sameFilter.Q : 0;
+                        bandpass_freq_knob.setValue(sameFilter ? sameFilter.frequency : 20000)
+                        bandpass_q_knob.setValue(sameFilter ? sameFilter.Q : 0)
+                        break;
                 }
                 break;
         }
@@ -355,15 +396,33 @@ function redo() {
         }
         switch (redoAction.type) {
             case 'buffer':
-                toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: redoAction.action.tooltipTextUndo, tooltipTextRedo: redoAction.action.tooltipTextRedo});
+                toUndo('buffer', {
+                    buffer: wavesurfer.backend.buffer,
+                    tooltipTextUndo: redoAction.action.tooltipTextUndo,
+                    tooltipTextRedo: redoAction.action.tooltipTextRedo
+                });
                 var previousBuffer = redoAction.action.buffer;
                 wavesurfer.empty()
                 wavesurfer.loadDecodedBuffer(previousBuffer);
                 break;
             case 'filter':
                 toUndo('filter', redoAction.action);
-                // Apply filter
-                applyFilter(redoAction.action.filterType, redoAction.action.frequency, redoAction.action.Q);
+                switch (redoAction.action.filterType) {
+                    case 'lowpass':
+                        lowpassFilter.frequency.value = redoAction.action.frequency
+                        lowpass_knob.setValue(redoAction.action.frequency);
+                        break;
+                    case 'highpass':
+                        highpassFilter.frequency.value = redoAction.action.frequency
+                        highpass_knob.setValue(redoAction.action.frequency);
+                        break;
+                    case 'bandpass':
+                        bandpassFilter.frequency.value = redoAction.action.frequency
+                        bandpassFilter.Q.value = redoAction.action.Q
+                        bandpass_freq_knob.setValue(redoAction.action.frequency);
+                        bandpass_q_knob.setValue(redoAction.action.Q);
+                        break;
+                }
                 break;
         }
     } else {
@@ -397,30 +456,30 @@ function toRedo(type, action) {
 function createBuffer(originalBuffer, duration) {
     var sampleRate = originalBuffer.sampleRate
     var frameCount = duration * sampleRate
-    var channels = originalBuffer.numberOfChannels 
+    var channels = originalBuffer.numberOfChannels
     return new AudioContext().createBuffer(channels, frameCount, sampleRate)
-  }
-  
+}
+
 function copyBuffer(fromBuffer, fromStart, fromEnd, toBuffer, toStart) {
     var sampleRate = fromBuffer.sampleRate
     var frameCount = (fromEnd - fromStart) * sampleRate
     for (var i = 0; i < fromBuffer.numberOfChannels; i++) {
         var fromChanData = fromBuffer.getChannelData(i)
         var toChanData = toBuffer.getChannelData(i)
-        for (var j = 0, f = Math.round(fromStart*sampleRate), t = Math.round(toStart*sampleRate); j < frameCount; j++, f++, t++) {
+        for (var j = 0, f = Math.round(fromStart * sampleRate), t = Math.round(toStart * sampleRate); j < frameCount; j++, f++, t++) {
             toChanData[t] = fromChanData[f]
         }
     }
 }
 
 function concatBuffer(buffer1, buffer2) {
-	var context = new AudioContext();
-    var numberOfChannels = Math.min( buffer1.numberOfChannels, buffer2.numberOfChannels );
-    var tmp = context.createBuffer( numberOfChannels, (buffer1.length + buffer2.length), buffer1.sampleRate );
-    for (var i=0; i<numberOfChannels; i++) {
-      var channel = tmp.getChannelData(i);
-      channel.set( buffer1.getChannelData(i), 0);
-      channel.set( buffer2.getChannelData(i), buffer1.length);
+    var context = new AudioContext();
+    var numberOfChannels = Math.min(buffer1.numberOfChannels, buffer2.numberOfChannels);
+    var tmp = context.createBuffer(numberOfChannels, (buffer1.length + buffer2.length), buffer1.sampleRate);
+    for (var i = 0; i < numberOfChannels; i++) {
+        var channel = tmp.getChannelData(i);
+        channel.set(buffer1.getChannelData(i), 0);
+        channel.set(buffer2.getChannelData(i), buffer1.length);
     }
     return tmp;
 }
@@ -442,7 +501,7 @@ function exportBufferToFile() {
     offlineFilters.reduce(function (prev, curr) {
         prev.connect(curr);
         return curr;
-        }, offlineAnalyser).connect(offlineGain);
+    }, offlineAnalyser).connect(offlineGain);
     offlineGain.connect(offlineCtx.destination);
     offlineScriptProcessor.connect(offlineCtx.destination);
 
@@ -455,7 +514,7 @@ function exportBufferToFile() {
     offlineSource.start();
 
     offlineCtx.startRendering();
-    offlineCtx.oncomplete = function(ev) {
+    offlineCtx.oncomplete = function (ev) {
         console.log('Rendered!');
         var blob = encodeWAV(ev.renderedBuffer);
 
@@ -493,12 +552,12 @@ function writeUTFBytes(view, offset, string) {
     }
 }
 
-function encodeWAV(originalBuffer){
+function encodeWAV(originalBuffer) {
     var channelData = originalBuffer.getChannelData(0);
     var buffer = new ArrayBuffer(44 + channelData.length * 2);
     var view = new DataView(buffer);
     var sampleRate = originalBuffer.sampleRate / 2;
-  
+
     // RIFF chunk descriptor
     writeUTFBytes(view, 0, 'RIFF');
     view.setUint32(4, 44 + channelData.length * 2, true);
@@ -527,16 +586,16 @@ function encodeWAV(originalBuffer){
     }
 
     // our final blob
-    var blob = new Blob([view], { type: 'audio/wav' });
-  
+    var blob = new Blob([view], {type: 'audio/wav'});
+
     return blob;
-  }
+}
 
 function reverse() {
     var buffer = wavesurfer.backend.buffer;
-    Array.prototype.reverse.call( buffer.getChannelData(0) );
+    Array.prototype.reverse.call(buffer.getChannelData(0));
     if (buffer.numberOfChannels > 1) {
-        Array.prototype.reverse.call( buffer.getChannelData(1) );
+        Array.prototype.reverse.call(buffer.getChannelData(1));
     }
     wavesurfer.empty();
     wavesurfer.loadDecodedBuffer(buffer);
@@ -546,9 +605,9 @@ function reverse() {
 
 function fadeIn(duration) { //TODO
     var gainNode = wavesurfer.backend.gainNode;
-    gainNode.gain.cancelScheduledValues( wavesurfer.backend.ac.currentTime );
-    gainNode.gain.setValueAtTime( 0.00001, wavesurfer.backend.ac.currentTime );
-    gainNode.gain.exponentialRampToValueAtTime( 1.0, wavesurfer.backend.ac.currentTime + duration );
+    gainNode.gain.cancelScheduledValues(wavesurfer.backend.ac.currentTime);
+    gainNode.gain.setValueAtTime(0.00001, wavesurfer.backend.ac.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(1.0, wavesurfer.backend.ac.currentTime + duration);
 }
 
 function fadeOut(duration) {
@@ -607,10 +666,10 @@ function deletePreviousRegion() {
 
 function deleteRegion() {
     setDisabledWhenNoRegion(true);
-	var regionList = wavesurfer.regions.list;
-	var region = regionList[Object.keys(regionList)[0]]
+    var regionList = wavesurfer.regions.list;
+    var region = regionList[Object.keys(regionList)[0]]
 
-	var startTime = region.start;
+    var startTime = region.start;
     var endTime = region.end;
 
     var totalDuration = wavesurfer.getDuration();
@@ -664,9 +723,9 @@ function resetAndLoadNewBuffer(finalBuffer = null) {
 function emptyRegion() {
     setDisabledWhenNoRegion(true);
     var regionList = wavesurfer.regions.list;
-	var region = regionList[Object.keys(regionList)[0]]
-	
-	var startTime = region.start;
+    var region = regionList[Object.keys(regionList)[0]]
+
+    var startTime = region.start;
     var endTime = region.end;
 
     var totalDuration = wavesurfer.getDuration();
@@ -682,7 +741,7 @@ function emptyRegion() {
     // Case 2: Region is at the start of the sample
     else if (startTime == 0) {
         emptyBuffer = createBuffer(wavesurfer.backend.buffer, endTime);
-        
+
         secondBuffer = createBuffer(wavesurfer.backend.buffer, totalDuration - endTime);
         copyBuffer(wavesurfer.backend.buffer, endTime, totalDuration, secondBuffer, 0);
 
@@ -700,17 +759,17 @@ function emptyRegion() {
         finalBuffer = concatBuffer(firstBuffer, emptyBuffer);
 
         resetAndLoadNewBuffer(finalBuffer);
-    }     
+    }
     // Case 4: Region is in the middle
     else {
         firstBuffer = createBuffer(wavesurfer.backend.buffer, startTime);
         copyBuffer(wavesurfer.backend.buffer, 0, startTime, firstBuffer, 0);
 
-        emptyBuffer = createBuffer(wavesurfer.backend.buffer, endTime-startTime);
-    
+        emptyBuffer = createBuffer(wavesurfer.backend.buffer, endTime - startTime);
+
         secondBuffer = createBuffer(wavesurfer.backend.buffer, totalDuration - endTime);
         copyBuffer(wavesurfer.backend.buffer, endTime, totalDuration, secondBuffer, 0);
-    
+
         var auxBuffer = concatBuffer(firstBuffer, emptyBuffer);
         finalBuffer = concatBuffer(auxBuffer, secondBuffer);
 
@@ -741,29 +800,24 @@ function numOfRegions() {
 }
 
 // Filter related functions
-function applyFilter(filter, filterType, frequency, Q, fromCancel = false) {
+function applyFilter(filter, filterType, frequency, Q) {
     if (!filter) {
         filter = wavesurfer.backend.ac.createBiquadFilter();
         filter.type = filterType;
+        filter.frequency.value = frequency;
+        filter.Q.value = Q;
         wavesurfer.backend.setFilter(filter);
-    }
-    filter.frequency.value = frequency;
-    filter.Q.value = Q;
-
-    if (!fromCancel) {
-        appliedFilters.push({
-            filterType: filterType,
-            frequency: frequency,
-            Q: Q
-        });
+    } else {
+        filter.frequency.value = frequency;
+        filter.Q.value = Q;
     }
     return filter;
 }
 
 function createKnob(divID, valMin, valMax, label, decimal, defaultValue = 0) {
-	var myKnob = pureknob.createKnob(71, 71);
-	myKnob.setProperty('valMin', valMin);
-	myKnob.setProperty('valMax', valMax);
+    var myKnob = pureknob.createKnob(71, 71);
+    myKnob.setProperty('valMin', valMin);
+    myKnob.setProperty('valMax', valMax);
     myKnob.setProperty('colorFG', '#AB4646');
     myKnob.setProperty('val', defaultValue);
     myKnob.setProperty('angleStart', -0.75 * Math.PI);
@@ -772,10 +826,10 @@ function createKnob(divID, valMin, valMax, label, decimal, defaultValue = 0) {
     myKnob.setProperty('colorLabel', '#AB4646');
     myKnob.setProperty('decimal', decimal);
     myKnob.setProperty('textScale', 0.8);
-	var node = myKnob.node();
-	var elem = document.getElementById(divID);
-	elem.appendChild(node);
-	return myKnob;
+    var node = myKnob.node();
+    var elem = document.getElementById(divID);
+    elem.appendChild(node);
+    return myKnob;
 }
 
 function changeKnobValues(knob, valMin, valMax, label, defaultValue) {
@@ -787,11 +841,11 @@ function changeKnobValues(knob, valMin, valMax, label, defaultValue) {
 
 
 function cancelFilter() {
-    applyFilter(null, 'allpass', 0, 1,true);
+    applyFilter(null, 'allpass', 0, 1, true);
 }
 
 function resetFilters() {
-	filters_knob.setValue(0);
+    filters_knob.setValue(0);
     applyFilter(null, 'allpass', 0, 1);
 }
 
@@ -820,7 +874,11 @@ function keyDown(event) {
     switch (event.keyCode) {
         case 8: // delete
             if (numOfRegions() > 0) {
-                toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Delete Region', tooltipTextRedo: 'Redo Delete Region'});
+                toUndo('buffer', {
+                    buffer: wavesurfer.backend.buffer,
+                    tooltipTextUndo: 'Undo Delete Region',
+                    tooltipTextRedo: 'Redo Delete Region'
+                });
                 deleteRegion();
             }
             break;
