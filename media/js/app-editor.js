@@ -138,7 +138,7 @@ function initWavesurferEvents() {
 }
 
 function initKnobListeners() {
-    var changeListenerLowpass = function (knob, value, mouseUp) {
+    var changeListenerLowpass = function(knob, value, mouseUp) {
         if (mouseUp) {
             toUndo('filter', {
                 filterType: 'lowpass',
@@ -148,18 +148,15 @@ function initKnobListeners() {
                 tooltipTextRedo: 'Redo Lowpass filter'
             });
             lowpassFilter.frequency.value = value;
-            appliedFilters.push({
-                filterType: 'lowpass',
-                frequency: lowpassFilter.frequency.value,
-                Q: lowpassFilter.Q.value
-            });
+            appliedFilters.push({filterType: 'lowpass', frequency: lowpassFilter.frequency.value, Q: lowpassFilter.Q.value});
         } else {
             lowpassFilter.frequency.value = value;
         }
+
     }
     lowpass_knob.addListener(changeListenerLowpass);
 
-    var changeListenerHighpass = function (knob, value, mouseUp) {
+    var changeListenerHighpass = function(knob, value, mouseUp) {
         if (mouseUp) {
             toUndo('filter', {
                 filterType: 'highpass',
@@ -169,19 +166,14 @@ function initKnobListeners() {
                 tooltipTextRedo: 'Redo Highpass filter'
             });
             highpassFilter.frequency.value = value;
-            appliedFilters.push({
-                filterType: 'highpass',
-                frequency: highpassFilter.frequency.value,
-                Q: highpassFilter.Q.value
-            });
+            appliedFilters.push({filterType: 'highpass', frequency: highpassFilter.frequency.value, Q: highpassFilter.Q.value});
         } else {
             highpassFilter.frequency.value = value;
         }
-
     }
     highpass_knob.addListener(changeListenerHighpass);
 
-    var changeListenerBandpassFreq = function (knob, value, mouseUp) {
+    var changeListenerBandpassFreq = function(knob, value, mouseUp) {
         if (value > 0 && bandpass_q_knob.getValue() > 0) {
             if (mouseUp) {
                 toUndo('filter', {
@@ -193,11 +185,7 @@ function initKnobListeners() {
                 });
                 bandpassFilter.frequency.value = value;
                 bandpassFilter.Q.value = bandpass_q_knob.getValue();
-                appliedFilters.push({
-                    filterType: 'bandpass',
-                    frequency: bandpassFilter.frequency.value,
-                    Q: bandpassFilter.Q.value
-                });
+                appliedFilters.push({filterType: 'bandpass', frequency: bandpassFilter.frequency.value, Q: bandpassFilter.Q.value});
             } else {
                 bandpassFilter.frequency.value = value;
                 bandpassFilter.Q.value = bandpass_q_knob.getValue();
@@ -206,8 +194,8 @@ function initKnobListeners() {
     }
     bandpass_freq_knob.addListener(changeListenerBandpassFreq);
 
-    var changeListenerBandpassQ = function (knob, value, mouseUp) {
-        if (bandpass_freq_knob.getValue() > 0 && value > 0) {
+    var changeListenerBandpassQ = function(knob, value, mouseUp) {
+        if (bandpass_freq_knob.getValue() != 20000 && value > 0) {
             if (mouseUp) {
                 toUndo('filter', {
                     filterType: 'bandpass',
@@ -218,47 +206,41 @@ function initKnobListeners() {
                 });
                 bandpassFilter.frequency.value = bandpass_freq_knob.getValue();
                 bandpassFilter.Q.value = value;
-                appliedFilters.push({
-                    filterType: 'bandpass',
-                    frequency: bandpassFilter.frequency.value,
-                    Q: bandpassFilter.Q.value
-                });
+                appliedFilters.push({filterType: 'bandpass', frequency: bandpassFilter.frequency.value, Q: bandpassFilter.Q.value});
             } else {
                 bandpassFilter.frequency.value = bandpass_freq_knob.getValue();
                 bandpassFilter.Q.value = value;
             }
         }
+        if (value == 0) {
+            bandpassFilter.Q.value = 0;
+        }
     }
     bandpass_q_knob.addListener(changeListenerBandpassQ);
 
-    var changeListenerAmplify = function (knob, value, mouseUp) {
-        if (mouseUp) {
-            //TODO: Undo and redo amplify
-        }
+    var changeListenerAmplify = function(knob, value, mouseUp) {
         amplify(value);
     }
     amplify_knob.addListener(changeListenerAmplify);
 
-    var changeListenerFadeIn = function (knob, value, mouseUp) {
+    var changeListenerFadeIn = function(knob, value, mouseUp) {
         if (mouseUp) {
-            //TODO: Undo and redo fadein
+            toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Fade in', tooltipTextRedo: 'Redo Fade in'});
+            fadeIn(value);
         }
-        fadeIn(value);
     }
     fade_in_knob.addListener(changeListenerFadeIn);
 
-    var changeListenerFadeOut = function (knob, value, mouseUp) {
+    var changeListenerFadeOut = function(knob, value, mouseUp) {
         if (mouseUp) {
             //TODO: Undo and redo fadeout
+            toUndo('buffer', {buffer: wavesurfer.backend.buffer, tooltipTextUndo: 'Undo Fade out', tooltipTextRedo: 'Redo Fade out'});
+            fadeOut(value);
         }
-        fadeOut(value);
     }
     fade_out_knob.addListener(changeListenerFadeOut);
 
-    var changeListenerPlaybackRate = function (knob, value, mouseUp) {
-        if (mouseUp) {
-            //TODO: Undo and redo playback rate
-        }
+    var changeListenerPlaybackRate = function(knob, value, mouseUp) {
         changePlaybackRate(value);
     }
     rate_knob.addListener(changeListenerPlaybackRate);
@@ -603,17 +585,64 @@ function reverse() {
 
 // Gain related functions
 
-function fadeIn(duration) { //TODO
-    var gainNode = wavesurfer.backend.gainNode;
-    gainNode.gain.cancelScheduledValues(wavesurfer.backend.ac.currentTime);
-    gainNode.gain.setValueAtTime(0.00001, wavesurfer.backend.ac.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(1.0, wavesurfer.backend.ac.currentTime + duration);
+
+function fadeIn(duration) {
+    var originalBuffer = wavesurfer.backend.buffer;
+    wavesurfer.backend.setOfflineAudioContext(wavesurfer.backend.buffer.length / wavesurfer.getPlaybackRate(), wavesurfer.backend.ac.sampleRate);
+    var offline_ctx = wavesurfer.backend.offlineAc;
+    var source = offline_ctx.createBufferSource();
+    source.buffer = originalBuffer;
+
+    var gain = offline_ctx.createGain();
+    gain.gain.setValueAtTime(0, offline_ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(1, offline_ctx.currentTime + duration);
+    gain.connect (offline_ctx.destination);
+    source.connect (gain);
+
+    source.start();
+
+    offline_ctx.startRendering().then((renderedBuffer) => {
+        wavesurfer.loadDecodedBuffer(renderedBuffer);
+        wavesurfer.stop();
+        source.disconnect();
+    }).catch((err) => {
+        console.error(err);
+    })
 }
 
 function fadeOut(duration) {
-    var gainNode = wavesurfer.backend.gainNode;
-    var sm = getSmoothFade(wavesurfer.backend.ac, gainNode, {type: 'exponential'});
-    sm.fadeOut();
+    var originalBuffer = wavesurfer.backend.buffer;
+
+    var fadeOutBuffer = createBuffer(originalBuffer, originalBuffer.duration - wavesurfer.getCurrentTime());
+    copyBuffer(wavesurfer.backend.buffer, wavesurfer.getCurrentTime(), originalBuffer.duration, fadeOutBuffer, 0);
+    if (wavesurfer.getCurrentTime() != 0) {
+        var firstBuffer = createBuffer(originalBuffer, wavesurfer.getCurrentTime());
+        copyBuffer(wavesurfer.backend.buffer, 0, wavesurfer.getCurrentTime(), firstBuffer, 0);
+    }
+
+    wavesurfer.backend.setOfflineAudioContext(fadeOutBuffer.length / wavesurfer.getPlaybackRate(), wavesurfer.backend.ac.sampleRate);
+    var offline_ctx = wavesurfer.backend.offlineAc;
+    var source = offline_ctx.createBufferSource();
+    source.buffer = fadeOutBuffer;
+
+    var gain = offline_ctx.createGain();
+    gain.gain.setValueAtTime(1, offline_ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, offline_ctx.currentTime + duration/1);
+    gain.connect(offline_ctx.destination);
+    source.connect(gain);
+
+    source.start();
+
+
+    offline_ctx.startRendering().then((renderedBuffer) => {
+        var finalBuffer = wavesurfer.getCurrentTime() == 0 ? renderedBuffer : concatBuffer(firstBuffer, renderedBuffer);
+        wavesurfer.loadDecodedBuffer(finalBuffer);
+        wavesurfer.stop();
+        //source.disconnect();
+    }).catch((err) => {
+        console.error(err);
+    })
+
 }
 
 function amplify(value) {
