@@ -28,3 +28,8 @@
 .knob-name {
     font-size: 1rem !important;
 }
+
+.help-modal-text {
+    font-size: 24px !important;
+    font-weight: bold;
+}
